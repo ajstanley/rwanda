@@ -1,0 +1,5 @@
+name: 'rwanda'
+type: module
+description: 'Custom behaviors for Aegius'
+core: 8.x
+package: 'Aegius'

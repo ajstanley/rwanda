@@ -1,0 +1,13 @@
+{
+    "name": "rwanda",
+    "type": "drupal-module",
+    "description": "Custom behaviors for Aegius",
+    "keywords": [
+    ],
+    "homepage": "https://www.drupal.org/project/rwanda",
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/rwanda",
+        "source": "http://cgit.drupalcode.org/rwanda",
+    },
+}

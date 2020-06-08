@@ -1,0 +1,15 @@
+rwanda.registration_form:
+  path: '/node/add/registrant'
+  defaults:
+    _form: '\Drupal\rwanda\Form\RegistrationForm'
+    _title: 'RegistrationForm'
+  requirements:
+    _access: 'TRUE'
+
+rwanda.registration_form_edit:
+  path: '/rwanda/form/registration/edit/{node}'
+  defaults:
+    _form: '\Drupal\rwanda\Form\RegistrationForm'
+    _title: 'RegistrationForm - edit'
+  requirements:
+    _access: 'TRUE'

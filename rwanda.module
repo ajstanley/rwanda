@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * @file
+ * Contains rwanda.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
+
+/**
+ * Implements hook_help().
+ */
+function rwanda_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the rwanda module.
+    case 'help.page.rwanda':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Custom behaviors for Aegius') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function rwanda_theme() {
+  return [
+    'rwanda' => [
+      'render element' => 'children',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function rwanda_form_registration_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  $form['#title'] = t('Register');
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function rwanda_form_node_registrant_edit_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+    $current_path = \Drupal::service('path.current')->getPath();
+    $parts = explode('/', $current_path);
+    $path = \Drupal\Core\Url::fromRoute('rwanda.registration_form_edit',
+      ['node' => $parts[2]])->toString();
+    $response = new RedirectResponse($path);
+    $response->send();
+}
