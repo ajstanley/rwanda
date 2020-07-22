@@ -8,6 +8,6 @@
     "minimum-stability": "dev",
     "support": {
         "issues": "https://www.drupal.org/project/issues/rwanda",
-        "source": "http://cgit.drupalcode.org/rwanda",
-    },
+        "source": "http://cgit.drupalcode.org/rwanda"
+    }
 }

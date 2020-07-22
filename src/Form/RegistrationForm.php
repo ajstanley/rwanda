@@ -37,6 +37,9 @@ class RegistrationForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, Node $node = NULL) {
+    if ($node) {
+      $form_state->set('nid', $node->id());
+    }
 
     $form['registrants'] = [
       '#type' => 'table',
@@ -61,6 +64,7 @@ class RegistrationForm extends FormBase {
       '#default_value' => $node ? $node->get('field_telephone')->value : '',
     ];
     $form['registrants'][1]['last_name'] = [
+      '#title' => t('Last Name'),
       '#type' => 'textfield',
       '#default_value' => $node ? $node->get('field_last_name')->value : '',
     ];
@@ -130,6 +134,17 @@ class RegistrationForm extends FormBase {
       '#default_value' => $node ? $node->get('field_additional_comments')->value : '',
 
     ];
+    $form['registrants'][4]['approval_status'] = [
+      '#title' => t('Approval Status'),
+      '#type' => 'select',
+      '#options' => [
+        'pending' => t('Pending'),
+        'approved' => t('Approved'),
+        'incomplete' => t('Incomplete'),
+        'rejected' => t('Rejected'),
+      ],
+      '#default_value' => $node ? $node->get('field_approval_status')->value : '',
+    ];
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Submit'),
@@ -171,7 +186,15 @@ class RegistrationForm extends FormBase {
       }
     }
 
-    $node = Node::create($fields);
+    if ($form_state->get('nid')) {
+      $node = Node::load($form_state->get('nid'));
+      foreach ($fields as $property => $value) {
+        $node->set($property, $value);
+      }
+    }
+    else {
+      $node = Node::create($fields);
+    }
     $node->save();
   }
 

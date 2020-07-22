@@ -13,3 +13,10 @@ rwanda.registration_form_edit:
     _title: 'RegistrationForm - edit'
   requirements:
     _access: 'TRUE'
+rwanda.court_form:
+  path: '/rwanda/form/court'
+  defaults:
+    _form: '\Drupal\rwanda\Form\CourtForm'
+    _title: 'CourtForm'
+  requirements:
+    _access: 'TRUE'
