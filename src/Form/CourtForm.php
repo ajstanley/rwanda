@@ -95,13 +95,15 @@ class CourtForm extends FormBase {
             'name' => $candidate,
             'vid' => \strtolower($key),
           ])->save();
-          $count ++;
+          $count++;
         }
 
       }
 
     }
-    \Drupal\flysystem\Form\drupal_set_message("$count terms added.");
+
+    \Drupal::messenger()->addStatus("$count terms have been added");
+
   }
 
   private function buildVocab($vid) {
@@ -117,6 +119,7 @@ class CourtForm extends FormBase {
       ]
     )->save();
   }
+
   private function cleanString($string) {
     $string = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $string);
     return trim($string);
