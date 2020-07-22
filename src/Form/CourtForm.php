@@ -56,6 +56,7 @@ class CourtForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    $count = 0;
     $values = $form_state->getValues();
     $fid = $values['upload_csv'][0];
     $file = File::load($fid);
@@ -67,7 +68,7 @@ class CourtForm extends FormBase {
       $header = \strtolower($header);
       $header = $this->cleanString($header);
       $vocab = Vocabulary::load($header);
-      if (!$vocab) {
+      if (!$vocab && $header) {
         $this->buildVocab($header);
       }
     }
@@ -94,11 +95,13 @@ class CourtForm extends FormBase {
             'name' => $candidate,
             'vid' => \strtolower($key),
           ])->save();
+          $count ++;
         }
 
       }
 
     }
+    \Drupal\flysystem\Form\drupal_set_message("$count terms added.");
   }
 
   private function buildVocab($vid) {
