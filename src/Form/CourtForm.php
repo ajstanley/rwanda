@@ -4,6 +4,8 @@ namespace Drupal\rwanda\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\file\Entity\File;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\taxonomy\Entity\Vocabulary;
@@ -62,16 +64,25 @@ class CourtForm extends FormBase {
     $file = File::load($fid);
     $rows = array_map('str_getcsv', file($file->getFileUri()));
 
-    $headers = array_shift($rows);
+    array_shift($rows);
+    $current_vals = [];
+    $headers = [
+      'district',
+      'sector',
+      'general_assembly',
+      'court_of_appeal',
+      'court_of_sector',
+      'court_of_cell',
+    ];
+    $parents = [
+      'district' => NULL,
+      'sector' => 'district',
+      'general_assembly' => 'sector',
+      'court_of_sector' => 'general_assembly',
+      'court_of_appeal' => 'general_assembly',
+      'court_of_cell' => 'general_assembly',
+    ];
     $csv = [];
-    foreach ($headers as $header) {
-      $header = \strtolower($header);
-      $header = $this->cleanString($header);
-      $vocab = Vocabulary::load($header);
-      if (!$vocab && $header) {
-        $this->buildVocab($header);
-      }
-    }
     foreach ($rows as $row) {
       $csv[] = array_combine($headers, $row);
     }
@@ -80,6 +91,11 @@ class CourtForm extends FormBase {
       foreach ($data as $key => $value) {
         if (!$value) {
           continue;
+        }
+        foreach ($headers as $header) {
+          if ($data[$header]) {
+            $current_vals[$header] = $data[$header];
+          }
         }
         $key = $this->cleanString($key);
         $value = $this->cleanString($value);
@@ -91,10 +107,26 @@ class CourtForm extends FormBase {
           ->loadByProperties(['name' => $candidate, 'vid' => $vocab]);
         $term = reset($terms);
         if (!$term && $candidate) {
-          $term = Term::create([
+
+          $components = [
             'name' => $candidate,
             'vid' => \strtolower($key),
-          ])->save();
+          ];
+          if ($parents[$vocab]) {
+            $name = $this->cleanString($current_vals[$parents[$vocab]]);
+            $name = \strtolower($name);
+            $name = \ucfirst($name);
+            $parent_vid =  $parents[$header];
+            $parent_terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+              ->loadByProperties(['name' => $name, 'vid' => $parents[$vocab]]);
+            $parent_term = reset($parent_terms);
+            if($parent_term) {
+              $components["field_{$parents[$vocab]}"] = $parent_term->id();
+            }
+
+          }
+
+          $term = Term::create($components)->save();
           $count++;
         }
 
@@ -107,21 +139,41 @@ class CourtForm extends FormBase {
   }
 
   private function buildVocab($vid) {
-    $vid = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $vid);
     $vid = $this->cleanString($vid);
     $name = \ucfirst($vid);
     $name = trim($name);
     $vocabulary = Vocabulary::create(
       [
         'vid' => $vid,
+        'machine_name' => $vid,
         'description' => 'Rwandan Courts',
         'name' => $name,
       ]
     )->save();
+    $vocabulary = Vocabulary::load($vid);
+    $field_storage = FieldStorageConfig::create([
+      'entity_type' => 'taxonomy_vocabulary',
+      'field_name' => 'parent',
+      'type' => 'text',
+    ]);
+    $field_storage->save();
+
+    $bundle_fields = $this->entityManager->getFieldDefinitions('taxonomy_vocabulary', '$vid');
+    $bundle_keys = array_keys($bundle_fields);
+    if (!in_array('parent', $bundle_keys)) {
+      FieldConfig::create([
+        'field_storage' => $field_storage,
+        'bundle' => $vid,
+        'label' => 'Parent',
+      ])->save();
+    }
+
   }
 
   private function cleanString($string) {
+    $string = trim($string);
     $string = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $string);
+    $string = \str_replace(' ', '_', $string);
     return trim($string);
   }
 }
