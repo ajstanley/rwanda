@@ -62,18 +62,11 @@ class CourtForm extends FormBase {
     $values = $form_state->getValues();
     $fid = $values['upload_csv'][0];
     $file = File::load($fid);
+    $filename = $file->label();
     $rows = array_map('str_getcsv', file($file->getFileUri()));
 
     array_shift($rows);
     $current_vals = [];
-    $headers = [
-      'district',
-      'sector',
-      'general_assembly',
-      'court_of_appeal',
-      'court_of_sector',
-      'court_of_cell',
-    ];
     $parents = [
       'district' => NULL,
       'sector' => 'district',
@@ -82,8 +75,10 @@ class CourtForm extends FormBase {
       'court_of_appeal' => 'general_assembly',
       'court_of_cell' => 'general_assembly',
     ];
+    $headers = \array_keys($parents);
     $csv = [];
     foreach ($rows as $row) {
+      $row = \array_slice($row, 0, 6);
       $csv[] = array_combine($headers, $row);
     }
     $file->delete();
@@ -107,7 +102,6 @@ class CourtForm extends FormBase {
           ->loadByProperties(['name' => $candidate, 'vid' => $vocab]);
         $term = reset($terms);
         if (!$term && $candidate) {
-
           $components = [
             'name' => $candidate,
             'vid' => \strtolower($key),
@@ -134,7 +128,7 @@ class CourtForm extends FormBase {
 
     }
 
-    \Drupal::messenger()->addStatus("$count terms have been added");
+    \Drupal::messenger()->addStatus("$count terms have been added from $filename");
 
   }
 
