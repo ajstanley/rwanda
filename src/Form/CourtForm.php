@@ -5,7 +5,6 @@ namespace Drupal\rwanda\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\file\Entity\File;
-use Drupal\taxonomy\Entity\Term;
 
 /**
  * Class CourtForm.
@@ -86,12 +85,15 @@ class CourtForm extends FormBase {
     $file->delete();
     foreach ($csv as $data) {
       foreach ($data as $key => $value) {
+        $value = trim($value);
         if (!$value) {
           continue;
         }
         foreach ($headers as $header) {
-          if ($data[$header]) {
-            $current_vals[$header] = $data[$header];
+          $replacement = trim($data[$header]);
+
+          if ($replacement) {
+            $current_vals[$header] = $replacement;
           }
         }
         $key = $this->cleanString($key);
@@ -115,27 +117,25 @@ class CourtForm extends FormBase {
           if ($parent_term) {
             $components["field_{$parents[$vocab]}"] = $parent_term->id();
           }
-          // Check to see if term exists already in this vocabulary.
-          $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
-            ->loadByProperties($components);
-          $term = reset($terms);
-          if (!$term) {
-            if ($components['name']) {
-              $term = Term::create($components)->save();
-              $count++;
-            }
-            else {
-              dsm ($components);
-            }
-
+        }
+        // Check to see if term exists already in this vocabulary.
+        $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+          ->loadByProperties($components);
+        $term = reset($terms);
+        if (!$term) {
+          if ($components['name']) {
+            //  $term = Term::create($components)->save();
+            $count++;
           }
           else {
-            $preexists++;
+            dsm($components);
           }
+        }
+        else {
+          $preexists++;
         }
       }
     }
-
     \Drupal::messenger()
       ->addStatus("$count terms have been added from $filename");
     \Drupal::messenger()->addStatus("$empty empty rows.");
