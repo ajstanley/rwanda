@@ -5,6 +5,7 @@ namespace Drupal\rwanda\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\file\Entity\File;
+use Drupal\taxonomy\Entity\Term;
 
 /**
  * Class CourtForm.
@@ -65,6 +66,8 @@ class CourtForm extends FormBase {
     $current_vals = [];
     $empty = 0;
     $preexists = 0;
+    $updated = 0;
+    $parent_term = NULL;
     $parents = [
       'district' => NULL,
       'sector' => 'district',
@@ -105,41 +108,39 @@ class CourtForm extends FormBase {
           'name' => $candidate,
           'vid' => \strtolower($key),
         ];
+
         if ($parents[$vocab]) {
           $name = $this->cleanString($current_vals[$parents[$vocab]]);
           $name = \strtolower($name);
           $name = \ucfirst($name);
-          $parent_vid = $parents[$header];
           $parent_terms = \Drupal::entityTypeManager()
             ->getStorage('taxonomy_term')
             ->loadByProperties(['name' => $name, 'vid' => $parents[$vocab]]);
           $parent_term = reset($parent_terms);
-          if ($parent_term) {
-            $components["field_{$parents[$vocab]}"] = $parent_term->id();
-          }
         }
         // Check to see if term exists already in this vocabulary.
         $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
           ->loadByProperties($components);
         $term = reset($terms);
-        if (!$term) {
-          if ($components['name']) {
-            //  $term = Term::create($components)->save();
-            $count++;
-          }
-          else {
-            dsm($components);
-          }
+        if ($term && $parent_term) {
+          $field_name = "field_{$parents[$vocab]}";
+          $term->$field_name->setValue($parent_term->id());
+          $term->save();
+          $updated++;
         }
-        else {
-          $preexists++;
+        if (!$term) {
+          if ($parent_term) {
+            $components["field_{$parents[$vocab]}"] = $parent_term->id();
+          }
+          $term = Term::create($components)->save();
+          $count++;
         }
       }
     }
     \Drupal::messenger()
       ->addStatus("$count terms have been added from $filename");
     \Drupal::messenger()->addStatus("$empty empty rows.");
-    \Drupal::messenger()->addStatus("$preexists duplicates.");
+    \Drupal::messenger()->addStatus("$updated terms have been updated.");
 
   }
 
