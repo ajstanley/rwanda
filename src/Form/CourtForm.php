@@ -4,11 +4,7 @@ namespace Drupal\rwanda\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\field\Entity\FieldConfig;
-use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\file\Entity\File;
-use Drupal\taxonomy\Entity\Term;
-use Drupal\taxonomy\Entity\Vocabulary;
 
 /**
  * Class CourtForm.
@@ -123,8 +119,14 @@ class CourtForm extends FormBase {
             ->loadByProperties($components);
           $term = reset($terms);
           if (!$term) {
-           // $term = Term::create($components)->save();
-            $count++;
+            if ($components['name']) {
+              $term = Term::create($components)->save();
+              $count++;
+            }
+            else {
+              dsm ($components);
+            }
+
           }
           else {
             $preexists++;
