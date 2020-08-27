@@ -123,7 +123,7 @@ class CourtForm extends FormBase {
             ->loadByProperties($components);
           $term = reset($terms);
           if (!$term) {
-            $term = Term::create($components)->save();
+           // $term = Term::create($components)->save();
             $count++;
           }
           else {
@@ -140,42 +140,9 @@ class CourtForm extends FormBase {
 
   }
 
-  private function buildVocab($vid) {
-    $vid = $this->cleanString($vid);
-    $name = \ucfirst($vid);
-    $name = trim($name);
-    $vocabulary = Vocabulary::create(
-      [
-        'vid' => $vid,
-        'machine_name' => $vid,
-        'description' => 'Rwandan Courts',
-        'name' => $name,
-      ]
-    )->save();
-    $vocabulary = Vocabulary::load($vid);
-    $field_storage = FieldStorageConfig::create([
-      'entity_type' => 'taxonomy_vocabulary',
-      'field_name' => 'parent',
-      'type' => 'text',
-    ]);
-    $field_storage->save();
-
-    $bundle_fields = $this->entityManager->getFieldDefinitions('taxonomy_vocabulary', '$vid');
-    $bundle_keys = array_keys($bundle_fields);
-    if (!in_array('parent', $bundle_keys)) {
-      FieldConfig::create([
-        'field_storage' => $field_storage,
-        'bundle' => $vid,
-        'label' => 'Parent',
-      ])->save();
-    }
-
-  }
-
   private function cleanString($string) {
     $string = trim($string);
     $string = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $string);
-    $string = \str_replace(' ', '_', $string);
     return trim($string);
   }
 }
