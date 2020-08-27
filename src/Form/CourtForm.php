@@ -67,6 +67,8 @@ class CourtForm extends FormBase {
 
     array_shift($rows);
     $current_vals = [];
+    $empty = 0;
+    $preexists = 0;
     $parents = [
       'district' => NULL,
       'sector' => 'district',
@@ -80,6 +82,9 @@ class CourtForm extends FormBase {
     foreach ($rows as $row) {
       $row = \array_slice($row, 0, 6);
       $csv[] = array_combine($headers, $row);
+      if ($row[5] == '') {
+        $empty++;
+      }
     }
     $file->delete();
     foreach ($csv as $data) {
@@ -97,38 +102,41 @@ class CourtForm extends FormBase {
         $vocab = \strtolower($key);
         $candidate = \strtolower($value);
         $candidate = \ucfirst($candidate);
-        // Check to see if term exists already in this vocabulary.
-        $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
-          ->loadByProperties(['name' => $candidate, 'vid' => $vocab]);
-        $term = reset($terms);
-        if (!$term && $candidate) {
-          $components = [
-            'name' => $candidate,
-            'vid' => \strtolower($key),
-          ];
-          if ($parents[$vocab]) {
-            $name = $this->cleanString($current_vals[$parents[$vocab]]);
-            $name = \strtolower($name);
-            $name = \ucfirst($name);
-            $parent_vid =  $parents[$header];
-            $parent_terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
-              ->loadByProperties(['name' => $name, 'vid' => $parents[$vocab]]);
-            $parent_term = reset($parent_terms);
-            if($parent_term) {
-              $components["field_{$parents[$vocab]}"] = $parent_term->id();
-            }
-
+        $components = [
+          'name' => $candidate,
+          'vid' => \strtolower($key),
+        ];
+        if ($parents[$vocab]) {
+          $name = $this->cleanString($current_vals[$parents[$vocab]]);
+          $name = \strtolower($name);
+          $name = \ucfirst($name);
+          $parent_vid = $parents[$header];
+          $parent_terms = \Drupal::entityTypeManager()
+            ->getStorage('taxonomy_term')
+            ->loadByProperties(['name' => $name, 'vid' => $parents[$vocab]]);
+          $parent_term = reset($parent_terms);
+          if ($parent_term) {
+            $components["field_{$parents[$vocab]}"] = $parent_term->id();
           }
-
-          $term = Term::create($components)->save();
-          $count++;
+          // Check to see if term exists already in this vocabulary.
+          $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+            ->loadByProperties($components);
+          $term = reset($terms);
+          if (!$term) {
+            $term = Term::create($components)->save();
+            $count++;
+          }
+          else {
+            $preexists++;
+          }
         }
-
       }
-
     }
 
-    \Drupal::messenger()->addStatus("$count terms have been added from $filename");
+    \Drupal::messenger()
+      ->addStatus("$count terms have been added from $filename");
+    \Drupal::messenger()->addStatus("$empty empty rows.");
+    \Drupal::messenger()->addStatus("$preexists duplicates.");
 
   }
 
