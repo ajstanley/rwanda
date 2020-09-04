@@ -29,11 +29,8 @@ function rwanda_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_theme().
  */
 function rwanda_theme() {
-  return [
-    'rwanda' => [
-      'render element' => 'children',
-    ],
-  ];
+  $themes['rwanda_court'] = ['render element' => 'form'];
+  return $themes;
 }
 
 /**

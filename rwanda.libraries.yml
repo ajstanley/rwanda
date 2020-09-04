@@ -1,0 +1,5 @@
+rwanda_court:
+  version: 1.x
+  css:
+    theme:
+      css/rwanda_court.css: {}

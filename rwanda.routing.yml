@@ -20,3 +20,10 @@ rwanda.court_form:
     _title: 'CourtForm'
   requirements:
     _access: 'TRUE'
+rwanda.court_case:
+  path: '/rwanda/form/court_case'
+  defaults:
+    _form: '\Drupal\rwanda\Form\CourtCase'
+    _title: 'CourtCase'
+  requirements:
+    _access: 'TRUE'
