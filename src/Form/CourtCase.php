@@ -102,8 +102,8 @@ class CourtCase extends FormBase {
     $current_assembly = $form_state->getValue('general_assembly');
     $this->current_assembly = $current_assembly ? $current_assembly : reset($assembly_ids);
 
-    $trigger = $form_state->getTriggeringElement()['#name'];
     $court_options = $this->getCourtOptions($form_state);
+    $date_format = 'Y-m-d H:i';
     $form['courts'] = [
       '#type' => 'fieldset',
       '#prefix' => '<div id="courts_wrapper">',
@@ -172,6 +172,7 @@ class CourtCase extends FormBase {
       '#suffix' => '</div>',
       '#title' => $this->t('Court of Sector'),
       '#description' => $this->t('Rwandan Court of Sector'),
+      '#disabled' => TRUE,
       '#states' => [
         'enabled' => [
           ':input[name="level"]' => ['value' => 'sector'],
@@ -186,6 +187,7 @@ class CourtCase extends FormBase {
       '#suffix' => '</div>',
       '#title' => $this->t('Court of Appeal'),
       '#description' => $this->t('Rwandan Court of Appeal'),
+      '#disabled' => TRUE,
       '#states' => [
         'enabled' => [
           ':input[name="level"]' => ['value' => 'appeal'],
@@ -200,6 +202,77 @@ class CourtCase extends FormBase {
         'appeal' => $this->t('Appeal'),
       ],
       '#title' => $this->t('Court Level'),
+      '#default_value' => 'cell',
+      '#prefix' => '<div class = "clearBoth">',
+      '#suffix' => '</div>',
+    ];
+    $form['trial_stage'] = [
+      '#type' => 'select',
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+      '#options' => [
+        'public' => $this->t('Public'),
+        'absentia' => $this->t('In Absentia'),
+        'restricted' => $this->t('Restricted'),
+      ],
+      '#title' => $this->t('Trial Stage'),
+      '#default_value' => 'public',
+    ];
+    $form['trial_level'] = [
+      '#type' => 'select',
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+      '#options' => [
+        'judgement_rendering' => $this->t('Judgement rendering'),
+        'opposition' => $this->t('In Absentia'),
+        'review' => $this->t('Review'),
+        'appeal' => $this->t('Appeal'),
+      ],
+      '#title' => $this->t('Trial Level'),
+      '#default_value' => 'judgement_rendering',
+    ];
+    $form['trial_location'] = [
+      '#type' => 'textfield',
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+      '#title' => $this->t('Trial Location'),
+    ];
+    $form['trial_date'] = [
+      '#type' => 'date',
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+      '#title' => $this->t('Trial Date'),
+      '#default_value' => [
+        'year' => 2020,
+        'month' => 2,
+        'day' => 15,
+      ],
+    ];
+    $form['accused'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'node',
+      '#title' => $this->t('Accused'),
+      '#description' => $this->t('Select accused.'),
+      '#selection_settings' => [
+        'target_bundles' => ['person'],
+      ],
+      '#autocreate' => [
+        'bundle' => 'person',
+      ],
+      '#prefix' => '<div class = "clearBoth">',
+      '#suffix' => '</div>',
+    ];
+    $form['plaintiff'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'node',
+      '#title' => $this->t('Plaintiff'),
+      '#description' => $this->t('Select plaintiff.'),
+      '#selection_settings' => [
+        'target_bundles' => ['person'],
+      ],
+      '#autocreate' => [
+        'bundle' => 'person',
+      ],
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
@@ -238,22 +311,8 @@ class CourtCase extends FormBase {
   /**
    * Ajax callback to change options for sector.
    */
-  public function changeSectorOptionsAjax(array &$form, FormStateInterface $form_state) {
-    return $form['sector'];
-  }
-
-  /**
-   * Ajax callback to change options for sector.
-   */
   public function changeCourtsOptionsAjax(array &$form, FormStateInterface $form_state) {
     return $form['courts'];
-  }
-
-  /**
-   * Ajax callback to change options for general Assembly.
-   */
-  public function changeAssemblyOptionsAjax(array &$form, FormStateInterface $form_state) {
-    return $form['general_assembly'];
   }
 
   /**
@@ -265,7 +324,7 @@ class CourtCase extends FormBase {
     foreach ($configs as $key => $config) {
       $parent = $form_state->getValue($config['parent']);
       $options = [];
-      if(isset($all_options[$config['parent']])){
+      if (isset($all_options[$config['parent']])) {
         $candidates = \array_keys($all_options[$config['parent']]);
         if (!in_array($config['default'], $candidates)) {
           $new_vals = array_keys($all_options[$config['parent']]);
