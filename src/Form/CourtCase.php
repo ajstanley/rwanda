@@ -27,11 +27,29 @@ class CourtCase extends FormBase {
   protected $entityQuery;
 
   /**
+   * @var string
+   */
+  protected $current_district;
+
+  /**
+   * @var string
+   */
+  protected $current_sector;
+
+  /**
+   * @var string
+   */
+  protected $current_assembly;
+
+  /**
    * Class constructor.
    */
   public function __construct(EntityTypeManagerInterface $entity_type_manager, QueryFactory $entityQuery) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityQuery = $entityQuery;
+    $this->current_district = '';
+    $this->current_sector = '';
+    $this->current_assembly = '';
   }
 
   /**
@@ -57,6 +75,8 @@ class CourtCase extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+
+    //district
     $vid = 'district';
     $terms = $this->entityTypeManager->getStorage('taxonomy_term')
       ->loadTree($vid);
@@ -64,62 +84,113 @@ class CourtCase extends FormBase {
       $term_data[$term->tid] = $term->name;
     }
     $keys = \array_keys($term_data);
+    $district = $form_state->getValue('district');
+    $this->current_district = $district ? $district : $keys[0];
+
+    //sector
     $sector_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_district', $keys[0])
       ->execute();
-    $default_sector = reset($sector_ids);
+    $current_sector = $form_state->getValue('sector');
+    $this->current_sector = $current_sector ? $current_sector : reset($sector_ids);
+
+    // assembly
     $assembly_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_sector', reset($sector_ids))
       ->execute();
-    $default_assembly = reset($assembly_ids);
 
-    $form['district'] = [
+    $current_assembly = $form_state->getValue('general_assembly');
+    $this->current_assembly = $current_assembly ? $current_assembly : reset($assembly_ids);
+
+    $trigger = $form_state->getTriggeringElement()['#name'];
+    $court_options = $this->getCourtOptions($form_state);
+    $form['courts'] = [
+      '#type' => 'fieldset',
+      '#prefix' => '<div id="courts_wrapper">',
+      '#suffix' => '</div>',
+    ];
+    $form['courts']['district'] = [
       '#type' => 'select',
       '#options' => $term_data,
       '#prefix' => '<div id="district_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('District'),
       '#description' => $this->t('Rwandan Court District'),
-      '#default_value' => $keys[0],
+      // '#default_value' => $keys[0],
       '#ajax' => [
-        'callback' => '::changeSectorOptionsAjax',
-        'wrapper' => 'sector_wrapper',
+        'callback' => '::changeCourtsOptionsAjax',
+        'wrapper' => 'courts_wrapper',
       ],
 
     ];
-    $sector_data = [
-      'parent' => 'district',
-      'parent_field' => 'field_district',
-      'default' => $keys[0],
-      'vid' => 'sector',
-    ];
-    $form['sector'] = [
+
+    $form['courts']['sector'] = [
       '#type' => 'select',
-      '#options' => $this->getCourtOptions($form_state, $sector_data),
+      '#options' => $court_options['sector'],
       '#prefix' => '<div id="sector_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Sector'),
       '#description' => $this->t('Rwandan Court Sector'),
       '#ajax' => [
-        'callback' => '::changeAssemblyOptionsAjax',
-        'wrapper' => 'assembly_wrapper',
+        'callback' => '::changeCourtsOptionsAjax',
+        'wrapper' => 'courts_wrapper',
       ],
 
     ];
-    $assembly_data = [
-      'parent' => 'sector',
-      'parent_field' => 'field_sector',
-      'default' => $default_sector,
-      'vid' => 'general_assembly',
-    ];
-    $form['general_assembly'] = [
+
+    $form['courts']['general_assembly'] = [
       '#type' => 'select',
-      '#options' => $this->getCourtOptions($form_state, $assembly_data),
+      '#options' => $court_options['general_assembly'],
       '#prefix' => '<div id="assembly_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('General Assembly'),
       '#description' => $this->t('Rwandan General Assembly'),
+      '#ajax' => [
+        'callback' => '::changeCourtsOptionsAjax',
+        'wrapper' => 'courts_wrapper',
+      ],
+    ];
 
+    $form['courts']['court_of_cell'] = [
+      '#type' => 'select',
+      '#options' => $court_options['court_of_cell'],
+      '#prefix' => '<div id="cell_wrapper" class = "court_selector clearBoth">',
+      '#suffix' => '</div>',
+      '#title' => $this->t('Court of Cell'),
+      '#description' => $this->t('Rwandan Court of Cell'),
+      '#states' => [
+        'enabled' => [
+          ':input[name="level"]' => ['value' => 'cell'],
+        ],
+      ],
+    ];
+
+    $form['courts']['court_of_sector'] = [
+      '#type' => 'select',
+      '#options' => $court_options['court_of_sector'],
+      '#prefix' => '<div id="court_of_sector_wrapper" class = "court_selector">',
+      '#suffix' => '</div>',
+      '#title' => $this->t('Court of Sector'),
+      '#description' => $this->t('Rwandan Court of Sector'),
+      '#states' => [
+        'enabled' => [
+          ':input[name="level"]' => ['value' => 'sector'],
+        ],
+      ],
+    ];
+
+    $form['courts']['court_of_appeal'] = [
+      '#type' => 'select',
+      '#options' => $court_options['court_of_appeal'],
+      '#prefix' => '<div id="court_of_appeal_wrapper" class = "court_selector">',
+      '#suffix' => '</div>',
+      '#title' => $this->t('Court of Appeal'),
+      '#description' => $this->t('Rwandan Court of Appeal'),
+      '#states' => [
+        'enabled' => [
+          ':input[name="level"]' => ['value' => 'appeal'],
+        ],
+      ],
     ];
     $form['level'] = [
       '#type' => 'radios',
@@ -131,63 +202,6 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Court Level'),
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
-    ];
-    $court_of_cell_data = [
-      'parent' => 'general_assembly',
-      'parent_field' => 'field_general_assembly',
-      'default' => $default_assembly,
-      'vid' => 'court_of_cell',
-    ];
-    $form['court_of_cell'] = [
-      '#type' => 'select',
-      '#options' => $this->getCourtOptions($form_state, $court_of_cell_data),
-      '#prefix' => '<div id="cell_wrapper" class = "court_selector">',
-      '#suffix' => '</div>',
-      '#title' => $this->t('Court of Cell'),
-      '#description' => $this->t('Rwandan Court of Cell'),
-      '#states' => [
-        'enabled' => [
-          ':input[name="level"]' => ['value' => 'cell'],
-        ],
-      ],
-    ];
-    $court_of_sector_data = [
-      'parent' => 'general_assembly',
-      'parent_field' => 'field_general_assembly',
-      'default' => $default_assembly,
-      'vid' => 'court_of_sector',
-    ];
-    $form['court_of_sector'] = [
-      '#type' => 'select',
-      '#options' => $this->getCourtOptions($form_state, $court_of_sector_data),
-      '#prefix' => '<div id="court_of_sector_wrapper" class = "court_selector">',
-      '#suffix' => '</div>',
-      '#title' => $this->t('Court of Sector'),
-      '#description' => $this->t('Rwandan Court of Sector'),
-      '#states' => [
-        'enabled' => [
-          ':input[name="level"]' => ['value' => 'sector'],
-        ],
-      ],
-    ];
-    $court_of_appeal_data = [
-      'parent' => 'general_assembly',
-      'parent_field' => 'field_general_assembly',
-      'default' => $default_assembly,
-      'vid' => 'court_of_appeal',
-    ];
-    $form['court_of_appeal'] = [
-      '#type' => 'select',
-      '#options' => $this->getCourtOptions($form_state, $court_of_appeal_data),
-      '#prefix' => '<div id="court_of_appeal_wrapper" class = "court_selector">',
-      '#suffix' => '</div>',
-      '#title' => $this->t('Court of Appeal'),
-      '#description' => $this->t('Rwandan Court of Appeal'),
-      '#states' => [
-        'enabled' => [
-          ':input[name="level"]' => ['value' => 'appeal'],
-        ],
-      ],
     ];
     $form['submit'] = [
       '#type' => 'submit',
@@ -229,6 +243,13 @@ class CourtCase extends FormBase {
   }
 
   /**
+   * Ajax callback to change options for sector.
+   */
+  public function changeCourtsOptionsAjax(array &$form, FormStateInterface $form_state) {
+    return $form['courts'];
+  }
+
+  /**
    * Ajax callback to change options for general Assembly.
    */
   public function changeAssemblyOptionsAjax(array &$form, FormStateInterface $form_state) {
@@ -239,7 +260,32 @@ class CourtCase extends FormBase {
    * Get options for Courts.
    */
 
-  public function getCourtOptions(FormStateInterface $form_state, array $config) {
+  public function getCourtOptions(FormStateInterface $form_state) {
+    $configs = $this->buildOptionsArray();
+    foreach ($configs as $key => $config) {
+      $parent = $form_state->getValue($config['parent']);
+      $options = [];
+      if(isset($all_options[$config['parent']])){
+        $candidates = \array_keys($all_options[$config['parent']]);
+        if (!in_array($config['default'], $candidates)) {
+          $new_vals = array_keys($all_options[$config['parent']]);
+          $config['default'] = $new_vals[0];
+          $parent = $new_vals[0];
+        }
+      }
+      if (!$parent) {
+        $parent = $config['default'];
+      }
+      $ids = $this->entityQuery->get('taxonomy_term')
+        ->condition($config['parent_field'], $parent)
+        ->condition('vid', $config['vid'])
+        ->execute();
+      foreach ($ids as $id) {
+        $term = Term::load($id);
+        $options[$term->id()] = $term->getName();
+      }
+      $all_options[$key] = $options;
+    }
     $parent = $form_state->getValue($config['parent']);
     $options = [];
     if (!$parent) {
@@ -253,7 +299,47 @@ class CourtCase extends FormBase {
       $term = Term::load($id);
       $options[$term->id()] = $term->getName();
     }
-    return $options;
+    $general_term = Term::load($this->current_assembly);
+    $parent_id = $general_term->get('field_sector');
+    $parent_term = Term::load($parent_id->getValue()[0]['target_id']);
+    $id = $parent_term->id();
+    return $all_options;
   }
+
+  public function buildOptionsArray() {
+    return [
+      'sector' => [
+        'parent' => 'district',
+        'parent_field' => 'field_district',
+        'default' => $this->current_district,
+        'vid' => 'sector',
+      ],
+      'general_assembly' => [
+        'parent' => 'sector',
+        'parent_field' => 'field_sector',
+        'default' => $this->current_sector,
+        'vid' => 'general_assembly',
+      ],
+      'court_of_cell' => [
+        'parent' => 'general_assembly',
+        'parent_field' => 'field_general_assembly',
+        'default' => $this->current_assembly,
+        'vid' => 'court_of_cell',
+      ],
+      'court_of_sector' => [
+        'parent' => 'general_assembly',
+        'parent_field' => 'field_general_assembly',
+        'default' => $this->current_assembly,
+        'vid' => 'court_of_sector',
+      ],
+      'court_of_appeal' => [
+        'parent' => 'general_assembly',
+        'parent_field' => 'field_general_assembly',
+        'default' => $this->current_assembly,
+        'vid' => 'court_of_appeal',
+      ],
+    ];
+  }
+
 
 }
