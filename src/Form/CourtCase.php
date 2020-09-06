@@ -10,7 +10,7 @@ use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class CourtCase.
+ * Form to build Court Case.
  */
 class CourtCase extends FormBase {
 
@@ -22,24 +22,32 @@ class CourtCase extends FormBase {
   protected $entityTypeManager;
 
   /**
+   * The Query Factory.
+   *
    * @var \Drupal\Core\Entity\Query\QueryFactory
    */
   protected $entityQuery;
 
   /**
+   * The currently selected District.
+   *
    * @var string
    */
-  protected $current_district;
+  protected $currentDistrict;
 
   /**
+   * THe currently selected Sector.
+   *
    * @var string
    */
-  protected $current_sector;
+  protected $currentSector;
 
   /**
+   * The currently selected General Assembly.
+   *
    * @var string
    */
-  protected $current_assembly;
+  protected $currentAssembly;
 
   /**
    * Class constructor.
@@ -47,7 +55,7 @@ class CourtCase extends FormBase {
   public function __construct(EntityTypeManagerInterface $entity_type_manager, QueryFactory $entityQuery) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityQuery = $entityQuery;
-    $this->current_district = '';
+    $this->currentDistrict = '';
     $this->current_sector = '';
     $this->current_assembly = '';
   }
@@ -75,8 +83,16 @@ class CourtCase extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    // Crimes.
+    $vid = 'crimes';
+    $terms = $this->entityTypeManager->getStorage('taxonomy_term')
+      ->loadTree($vid);
+    foreach ($terms as $term) {
+      $crime_data[$term->tid] = $term->name;
+    }
+    $crime_data['other'] = $this->t('Other');
 
-    //district
+    // District.
     $vid = 'district';
     $terms = $this->entityTypeManager->getStorage('taxonomy_term')
       ->loadTree($vid);
@@ -85,22 +101,20 @@ class CourtCase extends FormBase {
     }
     $keys = \array_keys($term_data);
     $district = $form_state->getValue('district');
-    $this->current_district = $district ? $district : $keys[0];
-
-    //sector
+    $this->currentDistrict = $district ? $district : $keys[0];
     $sector_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_district', $keys[0])
       ->execute();
-    $current_sector = $form_state->getValue('sector');
-    $this->current_sector = $current_sector ? $current_sector : reset($sector_ids);
+    $currentSector = $form_state->getValue('sector');
+    $this->current_sector = $currentSector ? $currentSector : reset($sector_ids);
 
-    // assembly
+    // Assembly.
     $assembly_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_sector', reset($sector_ids))
       ->execute();
 
-    $current_assembly = $form_state->getValue('general_assembly');
-    $this->current_assembly = $current_assembly ? $current_assembly : reset($assembly_ids);
+    $currentAssembly = $form_state->getValue('general_assembly');
+    $this->current_assembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
 
     $court_options = $this->getCourtOptions($form_state);
     $date_format = 'Y-m-d H:i';
@@ -259,7 +273,7 @@ class CourtCase extends FormBase {
       '#autocreate' => [
         'bundle' => 'person',
       ],
-      '#prefix' => '<div class = "clearBoth">',
+      '#prefix' => '<div class = "clearBoth participants">',
       '#suffix' => '</div>',
     ];
     $form['plaintiff'] = [
@@ -273,9 +287,28 @@ class CourtCase extends FormBase {
       '#autocreate' => [
         'bundle' => 'person',
       ],
-      '#prefix' => '<div class = "clearBoth">',
+      '#prefix' => '<div class = "participants">',
       '#suffix' => '</div>',
     ];
+    $form['crime'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Crime'),
+      '#options' => $crime_data,
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
+    $form['new_crime'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Unlisted Crime Type'),
+      '#states' => [
+        'enabled' => [
+          ':input[name="crime"]' => ['value' => 'other'],
+        ],
+      ],
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
+
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Submit'),
@@ -318,7 +351,6 @@ class CourtCase extends FormBase {
   /**
    * Get options for Courts.
    */
-
   public function getCourtOptions(FormStateInterface $form_state) {
     $configs = $this->buildOptionsArray();
     foreach ($configs as $key => $config) {
@@ -365,12 +397,18 @@ class CourtCase extends FormBase {
     return $all_options;
   }
 
+  /**
+   * Build full options for form elements.
+   *
+   * @return array
+   *   Full option array.
+   */
   public function buildOptionsArray() {
     return [
       'sector' => [
         'parent' => 'district',
         'parent_field' => 'field_district',
-        'default' => $this->current_district,
+        'default' => $this->currentDistrict,
         'vid' => 'sector',
       ],
       'general_assembly' => [
@@ -399,6 +437,5 @@ class CourtCase extends FormBase {
       ],
     ];
   }
-
 
 }

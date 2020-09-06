@@ -9,20 +9,28 @@ use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class RegistrationForm.
+ * Form to create potential registrants.
  */
 class RegistrationForm extends FormBase {
 
+  /**
+   * Country Service.
+   *
+   * @var \Drupal\countries_field\Controller
+   */
   private $serviceCountries;
 
-  public function __construct($serviceCountries) {
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(\Controller $serviceCountries) {
     $this->serviceCountries = $serviceCountries;
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container) {
-
-
     return new static($container->get('countries_field.countries'));
   }
 
@@ -167,9 +175,7 @@ class RegistrationForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
     // Display result.
-
     $all_fields = $form_state->getValue('registrants');
     $fields['type'] = 'registrant';
     $fields['title'] = $all_fields[0]['first_name'] . " " . $all_fields[1]['last_name'];

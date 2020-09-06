@@ -5,9 +5,10 @@
  * Contains rwanda.module.
  */
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-
 
 /**
  * Implements hook_help().
@@ -36,18 +37,19 @@ function rwanda_theme() {
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function rwanda_form_registration_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+function rwanda_form_registration_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $form['#title'] = t('Register');
 }
 
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function rwanda_form_node_registrant_edit_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
-    $current_path = \Drupal::service('path.current')->getPath();
-    $parts = explode('/', $current_path);
-    $path = \Drupal\Core\Url::fromRoute('rwanda.registration_form_edit',
-      ['node' => $parts[2]])->toString();
-    $response = new RedirectResponse($path);
-    $response->send();
+function rwanda_form_node_registrant_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $current_path = \Drupal::service('path.current')->getPath();
+  $parts = explode('/', $current_path);
+
+  $path = Url::fromRoute('rwanda.registration_form_edit',
+    ['node' => $parts[2]])->toString();
+  $response = new RedirectResponse($path);
+  $response->send();
 }

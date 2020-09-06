@@ -1,18 +1,27 @@
-h1{
+h1 {
   font-style: italic;
 }
 .js-quickedit-page-title {
   display: none;
 }
 div.court_selector {
-  float:left;
-  width:25%;
+  float: left;
+  width: 25%;
   display: inline;
+  padding-right: 2%;
 }
-.clearBoth { clear:both; }
+div.participants {
+  float: left;
+  width: 50%;
+  display: inline;
+  padding-right: 2%;
+}
+.clearBoth {
+  clear: both;
+}
 
 div.js-form-type-radio {
-  float:left;
+  float: left;
   display: inline;
   padding-right: 20px;
 }

@@ -8,7 +8,7 @@ use Drupal\file\Entity\File;
 use Drupal\taxonomy\Entity\Term;
 
 /**
- * Class CourtForm.
+ * Utility form to import CSVs.
  */
 class CourtForm extends FormBase {
 
@@ -144,9 +144,19 @@ class CourtForm extends FormBase {
 
   }
 
+  /**
+   * Normalizes imported strings.
+   *
+   * @param string $string
+   *   Input string.
+   *
+   * @return string
+   *   Cleaned string
+   */
   private function cleanString($string) {
     $string = trim($string);
     $string = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $string);
     return trim($string);
   }
+
 }
