@@ -118,9 +118,22 @@ class CourtCase extends FormBase {
 
     $court_options = $this->getCourtOptions($form_state);
     $form['#tree'] = TRUE;
+    $form['box_number'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Box Number'),
+      '#description' => $this->t('5 digits'),
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
+    $form['register_number'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Register'),
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
     $form['courts'] = [
       '#type' => 'fieldset',
-      '#prefix' => '<div id="courts_wrapper">',
+      '#prefix' => '<div id="courts_wrapper" class="clearBoth">',
       '#suffix' => '</div>',
     ];
     $form['courts']['district'] = [
@@ -357,7 +370,6 @@ class CourtCase extends FormBase {
         '#suffix' => '</div>',
       ];
 
-
     }
 
     // Button to add more names.
@@ -365,6 +377,45 @@ class CourtCase extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Add another accomplice'),
       '#prefix' => '<div class = "clearBoth addSpace">',
+      '#suffix' => '</div>',
+    ];
+    $form['properties'] =[
+      '#type' => 'textarea',
+      '#title' => $this->t('Properties destroyed'),
+      '#description' => $this->t('List of properties destroyed and their numbers. Example: 5 chairs, 2 cars, 1 house,etc…'),
+    ];
+    $form['decision'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Court Decision'),
+      '#description' => $this->t('If accused are found guilty or not.'),
+      '#options' => [
+        'yes' => $this->t('Yes'),
+        'no' => $this->t('No'),
+      ],
+      '#prefix' => '<div class = "court_selector clearBoth">',
+      '#suffix' => '</div>',
+    ];
+    $form['sentence'] = [
+      '#type' => 'select',
+      '#title' => $this->t('21.	Sentence'),
+      '#options' => [
+        'life' => $this->t('Life Sentence'),
+        '1_5' => $this->t('One to five years imprisonment'),
+        '6_10' => $this->t('Six to ten years imprisonment'),
+        '20' => $this->t('Twenty years imprisonment, or more'),
+        'restitution' => $this->t('	Restitution'),
+        'tig' => $this->t('TIG'),
+        'acquited' => $this->t('Acquited'),
+        'pardoned' => $this->t('Pardoned'),
+      ],
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
+    $form['observers'] =[
+      '#type' => 'textarea',
+      '#title' => $this->t('Observers'),
+      '#description' => $this->t('List of all observers.'),
+      '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
     $form['submit'] = [
