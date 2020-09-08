@@ -25,3 +25,13 @@ div.js-form-type-radio {
   display: inline;
   padding-right: 20px;
 }
+div.accomplice {
+  float: left;
+  width: 50%;
+  display: inline;
+  padding-right: 2%;
+}
+
+div.addSpace {
+  padding-bottom: 5px;
+}

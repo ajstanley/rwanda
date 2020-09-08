@@ -100,12 +100,12 @@ class CourtCase extends FormBase {
       $term_data[$term->tid] = $term->name;
     }
     $keys = \array_keys($term_data);
-    $district = $form_state->getValue('district');
+    $district = $form_state->getValue(['courts', 'district']);
     $this->currentDistrict = $district ? $district : $keys[0];
     $sector_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_district', $keys[0])
       ->execute();
-    $currentSector = $form_state->getValue('sector');
+    $currentSector = $form_state->getValue(['courts', 'sector']);
     $this->current_sector = $currentSector ? $currentSector : reset($sector_ids);
 
     // Assembly.
@@ -113,11 +113,11 @@ class CourtCase extends FormBase {
       ->condition('field_sector', reset($sector_ids))
       ->execute();
 
-    $currentAssembly = $form_state->getValue('general_assembly');
+    $currentAssembly = $form_state->getValue(['courts', 'general_assembly']);
     $this->current_assembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
 
     $court_options = $this->getCourtOptions($form_state);
-    $date_format = 'Y-m-d H:i';
+    $form['#tree'] = TRUE;
     $form['courts'] = [
       '#type' => 'fieldset',
       '#prefix' => '<div id="courts_wrapper">',
@@ -309,6 +309,64 @@ class CourtCase extends FormBase {
       '#suffix' => '</div>',
     ];
 
+    $form['witness_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Witness Type'),
+      '#options' => [
+        'defending' => $this->t('Defending'),
+        'accusing' => $this->t('Accusing'),
+      ],
+      '#prefix' => '<div class = "court_selector clearBoth">',
+      '#suffix' => '</div>',
+    ];
+    $form['witness_name'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Witness Name'),
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
+
+    // Container for our repeating fields.
+    if (!$form_state->get('num_names')) {
+      $form_state->set('num_names', 1);
+    }
+    $form['names'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Accomplices'),
+      '#prefix' => '<div class = "clearBoth">',
+      '#suffix' => '</div>',
+    ];
+
+    // Add our accomplices fields.
+    for ($x = 0; $x < $form_state->get('num_names'); $x++) {
+      $form['names'][$x]['accomplice_name'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Accomplice name @num', ['@num' => ($x + 1)]),
+        '#prefix' => '<div class = "accomplice">',
+        '#suffix' => '</div>',
+      ];
+      $form['names'][$x]['accomplice_sentence'] = [
+        '#type' => 'select',
+        '#options' => [
+          'convicted' => $this->t('Convicted'),
+          'acquitted' => $this->t('Acquitted'),
+          'pardoned' => $this->t('Pardoned'),
+        ],
+        '#title' => $this->t('Sentence @num', ['@num' => ($x + 1)]),
+        '#prefix' => '<div class = "accomplice">',
+        '#suffix' => '</div>',
+      ];
+
+
+    }
+
+    // Button to add more names.
+    $form['addname'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Add another accomplice'),
+      '#prefix' => '<div class = "clearBoth addSpace">',
+      '#suffix' => '</div>',
+    ];
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Submit'),
@@ -334,11 +392,20 @@ class CourtCase extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // Display result.
-    foreach ($form_state->getValues() as $key => $value) {
-      \Drupal::messenger()
-        ->addMessage($key . ': ' . ($key === 'text_format' ? $value['value'] : $value));
+    $values = $form_state->getValues();
+    switch ($values['op']) {
+      case 'Add another accomplice':
+        $this->addNewFields($form, $form_state);
+        break;
+
+      default:
+        foreach ($form_state->getValues() as $key => $value) {
+          \Drupal::messenger()
+            ->addMessage($key . ': ' . ($key === 'text_format' ? $value['value'] : $value));
+        }
     }
+    // Display result.
+
   }
 
   /**
@@ -436,6 +503,19 @@ class CourtCase extends FormBase {
         'vid' => 'court_of_appeal',
       ],
     ];
+  }
+
+  /**
+   * Handle adding new.
+   */
+  private function addNewFields(array &$form, FormStateInterface $form_state) {
+
+    // Add 1 to the number of names.
+    $num_names = $form_state->get('num_names');
+    $form_state->set('num_names', ($num_names + 1));
+
+    // Rebuild the form.
+    $form_state->setRebuild();
   }
 
 }
