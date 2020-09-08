@@ -397,7 +397,7 @@ class CourtCase extends FormBase {
     ];
     $form['sentence'] = [
       '#type' => 'select',
-      '#title' => $this->t('21.	Sentence'),
+      '#title' => $this->t('Sentence'),
       '#options' => [
         'life' => $this->t('Life Sentence'),
         '1_5' => $this->t('One to five years imprisonment'),
