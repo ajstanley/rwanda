@@ -35,3 +35,7 @@ div.accomplice {
 div.addSpace {
   padding-bottom: 5px;
 }
+
+.rounded {
+  border-radius: 8px !important;
+}

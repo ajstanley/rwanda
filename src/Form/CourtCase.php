@@ -133,7 +133,7 @@ class CourtCase extends FormBase {
     ];
     $form['courts'] = [
       '#type' => 'fieldset',
-      '#prefix' => '<div id="courts_wrapper" class="clearBoth">',
+      '#prefix' => '<div id="courts-wrapper" class="clearBoth">',
       '#suffix' => '</div>',
     ];
     $form['courts']['district'] = [
@@ -321,65 +321,95 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
-
-    $form['witness_type'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Witness Type'),
-      '#options' => [
-        'defending' => $this->t('Defending'),
-        'accusing' => $this->t('Accusing'),
-      ],
-      '#prefix' => '<div class = "court_selector clearBoth">',
+    // Container for our repeating fields.
+    if (!$form_state->get('num_witnesses')) {
+      $form_state->set('num_witnesses', 1);
+    }
+    $form['witnesses'] = [
+      '#type' => 'details',
+      '#open' => TRUE,
+      '#title' => $this->t('Witnesses'),
+      '#prefix' => '<div id ="witness-box" class = "clearBoth">',
       '#suffix' => '</div>',
     ];
-    $form['witness_name'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Witness Name'),
-      '#prefix' => '<div class = "court_selector">',
+    // Add our witnesses fields.
+    for ($counter = 0; $counter < $form_state->get('num_witnesses'); $counter++) {
+
+      $form['witnesses'][$counter]['witness_type'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Witness Type'),
+        '#options' => [
+          'defending' => $this->t('Defending'),
+          'accusing' => $this->t('Accusing'),
+        ],
+        '#prefix' => '<div class = "accomplice">',
+        '#suffix' => '</div>',
+      ];
+      $form['witnesses'][$counter]['witness_name'] = [
+        '#type' => 'entity_autocomplete',
+        '#target_type' => 'node',
+        '#title' => $this->t('Witness Name'),
+        '#selection_settings' => [
+          'target_bundles' => ['person'],
+        ],
+        '#autocreate' => [
+          'bundle' => 'person',
+        ],
+        '#prefix' => '<div class = "accomplice">',
+        '#suffix' => '</div>',
+      ];
+    }
+    // Button to add more names.
+    $form['witnesses']['add_witness'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Add another witness'),
+      '#attributes' => ['class' => ['rounded']],
+      '#prefix' => '<div class = "clearBoth addSpace">',
       '#suffix' => '</div>',
     ];
 
     // Container for our repeating fields.
-    if (!$form_state->get('num_names')) {
-      $form_state->set('num_names', 1);
+    if (!$form_state->get('num_accomplices')) {
+      $form_state->set('num_accomplices', 1);
     }
     $form['names'] = [
-      '#type' => 'fieldset',
+      '#type' => 'details',
+      '#open' => TRUE,
       '#title' => $this->t('Accomplices'),
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
 
     // Add our accomplices fields.
-    for ($x = 0; $x < $form_state->get('num_names'); $x++) {
-      $form['names'][$x]['accomplice_name'] = [
+    for ($counter = 0; $counter < $form_state->get('num_accomplices'); $counter++) {
+      $form['names'][$counter]['accomplice_name'] = [
         '#type' => 'textfield',
-        '#title' => $this->t('Accomplice name @num', ['@num' => ($x + 1)]),
+        '#title' => $this->t('Accomplice name @num', ['@num' => ($counter + 1)]),
         '#prefix' => '<div class = "accomplice">',
         '#suffix' => '</div>',
       ];
-      $form['names'][$x]['accomplice_sentence'] = [
+      $form['names'][$counter]['accomplice_sentence'] = [
         '#type' => 'select',
         '#options' => [
           'convicted' => $this->t('Convicted'),
           'acquitted' => $this->t('Acquitted'),
           'pardoned' => $this->t('Pardoned'),
         ],
-        '#title' => $this->t('Sentence @num', ['@num' => ($x + 1)]),
+        '#title' => $this->t('Sentence @num', ['@num' => ($counter + 1)]),
         '#prefix' => '<div class = "accomplice">',
         '#suffix' => '</div>',
       ];
-
     }
 
     // Button to add more names.
-    $form['addname'] = [
+    $form['names']['addname'] = [
       '#type' => 'submit',
       '#value' => $this->t('Add another accomplice'),
+      '#attributes' => ['class' => ['rounded']],
       '#prefix' => '<div class = "clearBoth addSpace">',
       '#suffix' => '</div>',
     ];
-    $form['properties'] =[
+    $form['properties'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Properties destroyed'),
       '#description' => $this->t('List of properties destroyed and their numbers. Example: 5 chairs, 2 cars, 1 house,etc…'),
@@ -389,8 +419,8 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Court Decision'),
       '#description' => $this->t('If accused are found guilty or not.'),
       '#options' => [
-        'yes' => $this->t('Yes'),
-        'no' => $this->t('No'),
+        'guilty' => $this->t('Guilty'),
+        'acquitted' => $this->t('Acquitted'),
       ],
       '#prefix' => '<div class = "court_selector clearBoth">',
       '#suffix' => '</div>',
@@ -402,25 +432,59 @@ class CourtCase extends FormBase {
         'life' => $this->t('Life Sentence'),
         '1_5' => $this->t('One to five years imprisonment'),
         '6_10' => $this->t('Six to ten years imprisonment'),
-        '20' => $this->t('Twenty years imprisonment, or more'),
-        'restitution' => $this->t('	Restitution'),
+        '11_20' => $this->t('Eleven to twenty years imprisonment'),
+        '20' => $this->t('Twenty-one years imprisonment, or more'),
+        'restitution' => $this->t('Restitution'),
         'tig' => $this->t('TIG'),
-        'acquited' => $this->t('Acquited'),
         'pardoned' => $this->t('Pardoned'),
+      ],
+      '#states' => [
+        'enabled' => [
+          ':input[name="decision"]' => ['value' => 'guilty'],
+        ],
       ],
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
-    $form['observers'] =[
-      '#type' => 'textarea',
+    if (!$form_state->get('num_observers')) {
+      $form_state->set('num_observers', 1);
+    }
+    $form['observers'] = [
+      '#type' => 'details',
+      '#open' => TRUE,
       '#title' => $this->t('Observers'),
-      '#description' => $this->t('List of all observers.'),
       '#prefix' => '<div class = "clearBoth">',
+      '#suffix' => '</div>',
+    ];
+    // Add our witnesses fields.
+    for ($counter = 0; $counter < $form_state->get('num_observers'); $counter++) {
+      $form['observers'][$counter]['observer_name'] = [
+        '#type' => 'entity_autocomplete',
+        '#target_type' => 'node',
+        '#title' => $this->t('Observer Name'),
+        '#selection_settings' => [
+          'target_bundles' => ['person'],
+        ],
+        '#autocreate' => [
+          'bundle' => 'person',
+        ],
+        '#prefix' => '<div class = "accomplice clearBoth">',
+        '#suffix' => '</div>',
+      ];
+    }
+
+    // Button to add more names.
+    $form['observers']['add_observer'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Add another observer'),
+      '#attributes' => ['class' => ['rounded']],
+      '#prefix' => '<div class = "clearBoth addSpace">',
       '#suffix' => '</div>',
     ];
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Submit'),
+      '#attributes' => ['class' => ['rounded']],
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
@@ -446,7 +510,15 @@ class CourtCase extends FormBase {
     $values = $form_state->getValues();
     switch ($values['op']) {
       case 'Add another accomplice':
-        $this->addNewFields($form, $form_state);
+        $this->addNewFields($form, $form_state, 'num_accomplices');
+        break;
+
+      case 'Add another witness':
+        $this->addNewFields($form, $form_state, 'num_witnesses');
+        break;
+
+      case 'Add another observer':
+        $this->addNewFields($form, $form_state, 'num_observers');
         break;
 
       default:
@@ -456,7 +528,6 @@ class CourtCase extends FormBase {
         }
     }
     // Display result.
-
   }
 
   /**
@@ -559,11 +630,11 @@ class CourtCase extends FormBase {
   /**
    * Handle adding new.
    */
-  private function addNewFields(array &$form, FormStateInterface $form_state) {
+  private function addNewFields(array &$form, FormStateInterface $form_state, string $counter) {
 
     // Add 1 to the number of names.
-    $num_names = $form_state->get('num_names');
-    $form_state->set('num_names', ($num_names + 1));
+    $current = $form_state->get($counter);
+    $form_state->set($counter, ($current + 1));
 
     // Rebuild the form.
     $form_state->setRebuild();
