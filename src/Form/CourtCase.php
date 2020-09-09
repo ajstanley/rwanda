@@ -425,15 +425,11 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector clearBoth">',
       '#suffix' => '</div>',
     ];
-    $form['sentence'] = [
+    $form['outcome'] = [
       '#type' => 'select',
-      '#title' => $this->t('Sentence'),
+      '#title' => $this->t('Outcome'),
       '#options' => [
-        'life' => $this->t('Life Sentence'),
-        '1_5' => $this->t('One to five years imprisonment'),
-        '6_10' => $this->t('Six to ten years imprisonment'),
-        '11_20' => $this->t('Eleven to twenty years imprisonment'),
-        '20' => $this->t('Twenty-one years imprisonment, or more'),
+        'imprisonment' => $this->t("Imprisonment"),
         'restitution' => $this->t('Restitution'),
         'tig' => $this->t('TIG'),
         'pardoned' => $this->t('Pardoned'),
@@ -446,6 +442,27 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
+
+    $form['sentence'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Sentence'),
+      '#options' => [
+        'life' => $this->t('Life Sentence'),
+        '1_5' => $this->t('1 -5  years'),
+        '6_10' => $this->t('6 -10 years'),
+        '11_20' => $this->t('11 -20 years'),
+        '20' => $this->t('21 - more years'),
+      ],
+      '#states' => [
+        'enabled' => [
+          ':input[name="outcome"]' => ['value' => 'imprisonment'],
+          ':input[name="decision"]' => ['value' => 'guilty'],
+        ],
+      ],
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
+
     if (!$form_state->get('num_observers')) {
       $form_state->set('num_observers', 1);
     }

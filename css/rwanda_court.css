@@ -39,3 +39,11 @@ div.addSpace {
 .rounded {
   border-radius: 8px !important;
 }
+
+details > summary {
+  padding: 2px 6px;
+  width: 15em;
+  background-color: #ddd;
+  border: none;
+  cursor: pointer;
+}
