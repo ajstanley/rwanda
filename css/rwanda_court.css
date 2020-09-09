@@ -47,3 +47,6 @@ details > summary {
   border: none;
   cursor: pointer;
 }
+details summary::-webkit-details-marker {
+  display: inline !important;
+}
