@@ -409,7 +409,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "clearBoth addSpace">',
       '#suffix' => '</div>',
     ];
-    $form['properties'] = [
+    $form['properties_destroyed'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Properties destroyed'),
       '#description' => $this->t('List of properties destroyed and their numbers. Example: 5 chairs, 2 cars, 1 house,etc…'),
@@ -448,10 +448,10 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Sentence'),
       '#options' => [
         'life' => $this->t('Life Sentence'),
-        '1_5' => $this->t('1 -5  years'),
-        '6_10' => $this->t('6 -10 years'),
-        '11_20' => $this->t('11 -20 years'),
-        '20' => $this->t('21 - more years'),
+        '1_5' => $this->t('1 to 5  years'),
+        '6_10' => $this->t('6 to 10 years'),
+        '11_20' => $this->t('11 to 20 years'),
+        '20' => $this->t('21 or more years'),
       ],
       '#states' => [
         'enabled' => [
@@ -497,6 +497,7 @@ class CourtCase extends FormBase {
       '#attributes' => ['class' => ['rounded']],
       '#prefix' => '<div class = "clearBoth addSpace">',
       '#suffix' => '</div>',
+
     ];
     $form['submit'] = [
       '#type' => 'submit',

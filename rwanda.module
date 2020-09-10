@@ -53,3 +53,12 @@ function rwanda_form_node_registrant_edit_form_alter(&$form, FormStateInterface 
   $response = new RedirectResponse($path);
   $response->send();
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function rwanda_form_node_court_case_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $path = Url::fromRoute('rwanda.court_case')->toString();
+  $response = new RedirectResponse($path);
+  $response->send();
+}

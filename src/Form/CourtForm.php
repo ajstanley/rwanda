@@ -65,7 +65,6 @@ class CourtForm extends FormBase {
     array_shift($rows);
     $current_vals = [];
     $empty = 0;
-    $preexists = 0;
     $updated = 0;
     $parent_term = NULL;
     $parents = [
