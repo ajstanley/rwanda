@@ -4,6 +4,7 @@ namespace Drupal\rwanda\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\countries_field\Countries;
 use Drupal\file\Entity\File;
 use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -16,14 +17,14 @@ class RegistrationForm extends FormBase {
   /**
    * Country Service.
    *
-   * @var \Drupal\countries_field\Controller
+   * @var \Drupal\countries_field\Countries
    */
   private $serviceCountries;
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(\Controller $serviceCountries) {
+  public function __construct(Countries $serviceCountries) {
     $this->serviceCountries = $serviceCountries;
   }
 

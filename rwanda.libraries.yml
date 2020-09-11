@@ -3,3 +3,9 @@ rwanda_court:
   css:
     theme:
       css/rwanda_court.css: {}
+
+rwanda_login:
+  version: 1.x
+  css:
+    theme:
+      css/rwanda_login.css: {}

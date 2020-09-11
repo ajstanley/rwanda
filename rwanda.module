@@ -31,6 +31,7 @@ function rwanda_help($route_name, RouteMatchInterface $route_match) {
  */
 function rwanda_theme() {
   $themes['rwanda_court'] = ['render element' => 'form'];
+  $themes['rwanda_login'] = ['render element' => 'form'];
   return $themes;
 }
 
@@ -61,4 +62,18 @@ function rwanda_form_node_court_case_form_alter(&$form, FormStateInterface $form
   $path = Url::fromRoute('rwanda.court_case')->toString();
   $response = new RedirectResponse($path);
   $response->send();
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function rwanda_form_user_login_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $form['#theme'] = 'rwanda_login';
+}
+
+function rwanda_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
+
+  if ($form_id === 'user_login_form')  {
+   // $form['#after_build'][] = '_media_library_views_form_media_library_after_build';
+  }
 }
