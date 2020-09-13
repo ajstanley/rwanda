@@ -133,7 +133,7 @@ class CourtCase extends FormBase {
     ];
     $form['courts'] = [
       '#type' => 'fieldset',
-      '#prefix' => '<div id="courts-wrapper" class="clearBoth">',
+      '#prefix' => '<div id="courts_wrapper" class="clearBoth">',
       '#suffix' => '</div>',
     ];
     $form['courts']['district'] = [
@@ -321,6 +321,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
+
     // Container for our repeating fields.
     if (!$form_state->get('num_witnesses')) {
       $form_state->set('num_witnesses', 1);
@@ -383,8 +384,15 @@ class CourtCase extends FormBase {
     // Add our accomplices fields.
     for ($counter = 0; $counter < $form_state->get('num_accomplices'); $counter++) {
       $form['names'][$counter]['accomplice_name'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Accomplice name @num', ['@num' => ($counter + 1)]),
+        '#type' => 'entity_autocomplete',
+        '#target_type' => 'node',
+        '#title' => $this->t('Accomplice Name @num', ['@num' => ($counter + 1)]),
+        '#selection_settings' => [
+          'target_bundles' => ['person'],
+        ],
+        '#autocreate' => [
+          'bundle' => 'person',
+        ],
         '#prefix' => '<div class = "accomplice">',
         '#suffix' => '</div>',
       ];
@@ -409,7 +417,15 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "clearBoth addSpace">',
       '#suffix' => '</div>',
     ];
-    $form['properties_destroyed'] = [
+
+    // Button to add more names.
+    $form['addname'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Add another accomplice'),
+      '#prefix' => '<div class = "clearBoth addSpace">',
+      '#suffix' => '</div>',
+    ];
+    $form['properties'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Properties destroyed'),
       '#description' => $this->t('List of properties destroyed and their numbers. Example: 5 chairs, 2 cars, 1 house,etc…'),
@@ -419,50 +435,28 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Court Decision'),
       '#description' => $this->t('If accused are found guilty or not.'),
       '#options' => [
-        'guilty' => $this->t('Guilty'),
-        'acquitted' => $this->t('Acquitted'),
+        'yes' => $this->t('Yes'),
+        'no' => $this->t('No'),
       ],
       '#prefix' => '<div class = "court_selector clearBoth">',
       '#suffix' => '</div>',
     ];
-    $form['outcome'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Outcome'),
-      '#options' => [
-        'imprisonment' => $this->t("Imprisonment"),
-        'restitution' => $this->t('Restitution'),
-        'tig' => $this->t('TIG'),
-        'pardoned' => $this->t('Pardoned'),
-      ],
-      '#states' => [
-        'enabled' => [
-          ':input[name="decision"]' => ['value' => 'guilty'],
-        ],
-      ],
-      '#prefix' => '<div class = "court_selector">',
-      '#suffix' => '</div>',
-    ];
-
     $form['sentence'] = [
       '#type' => 'select',
       '#title' => $this->t('Sentence'),
       '#options' => [
         'life' => $this->t('Life Sentence'),
-        '1_5' => $this->t('1 to 5  years'),
-        '6_10' => $this->t('6 to 10 years'),
-        '11_20' => $this->t('11 to 20 years'),
-        '20' => $this->t('21 or more years'),
-      ],
-      '#states' => [
-        'enabled' => [
-          ':input[name="outcome"]' => ['value' => 'imprisonment'],
-          ':input[name="decision"]' => ['value' => 'guilty'],
-        ],
+        '1_5' => $this->t('One to five years imprisonment'),
+        '6_10' => $this->t('Six to ten years imprisonment'),
+        '20' => $this->t('Twenty years imprisonment, or more'),
+        'restitution' => $this->t('Restitution'),
+        'tig' => $this->t('TIG'),
+        'acquited' => $this->t('Acquited'),
+        'pardoned' => $this->t('Pardoned'),
       ],
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
-
     if (!$form_state->get('num_observers')) {
       $form_state->set('num_observers', 1);
     }
@@ -499,10 +493,10 @@ class CourtCase extends FormBase {
       '#suffix' => '</div>',
 
     ];
+
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Submit'),
-      '#attributes' => ['class' => ['rounded']],
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
