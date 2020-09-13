@@ -435,24 +435,45 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Court Decision'),
       '#description' => $this->t('If accused are found guilty or not.'),
       '#options' => [
-        'yes' => $this->t('Yes'),
-        'no' => $this->t('No'),
+        'guilty' => $this->t('Guilty'),
+        'acquitted' => $this->t('Acquitted'),
       ],
       '#prefix' => '<div class = "court_selector clearBoth">',
       '#suffix' => '</div>',
     ];
+    $form['outcome'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Outcome'),
+      '#options' => [
+        'imprisonment' => $this->t("Imprisonment"),
+        'restitution' => $this->t('Restitution'),
+        'tig' => $this->t('TIG'),
+        'pardoned' => $this->t('Pardoned'),
+      ],
+      '#states' => [
+        'enabled' => [
+          ':input[name="decision"]' => ['value' => 'guilty'],
+        ],
+      ],
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
+
     $form['sentence'] = [
       '#type' => 'select',
       '#title' => $this->t('Sentence'),
       '#options' => [
         'life' => $this->t('Life Sentence'),
-        '1_5' => $this->t('One to five years imprisonment'),
-        '6_10' => $this->t('Six to ten years imprisonment'),
-        '20' => $this->t('Twenty years imprisonment, or more'),
-        'restitution' => $this->t('Restitution'),
-        'tig' => $this->t('TIG'),
-        'acquited' => $this->t('Acquited'),
-        'pardoned' => $this->t('Pardoned'),
+        '1_5' => $this->t('1 to 5  years'),
+        '6_10' => $this->t('6 to 10 years'),
+        '11_20' => $this->t('11 to 20 years'),
+        '20' => $this->t('21 or more years'),
+      ],
+      '#states' => [
+        'enabled' => [
+          ':input[name="outcome"]' => ['value' => 'imprisonment'],
+          ':input[name="decision"]' => ['value' => 'guilty'],
+        ],
       ],
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
