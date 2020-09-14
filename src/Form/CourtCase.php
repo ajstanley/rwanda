@@ -6,6 +6,8 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\Entity\Node;
+use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -56,8 +58,8 @@ class CourtCase extends FormBase {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityQuery = $entityQuery;
     $this->currentDistrict = '';
-    $this->current_sector = '';
-    $this->current_assembly = '';
+    $this->currentSector = '';
+    $this->currentAssembly = '';
   }
 
   /**
@@ -106,7 +108,7 @@ class CourtCase extends FormBase {
       ->condition('field_district', $keys[0])
       ->execute();
     $currentSector = $form_state->getValue(['courts', 'sector']);
-    $this->current_sector = $currentSector ? $currentSector : reset($sector_ids);
+    $this->currentSector = $currentSector ? $currentSector : reset($sector_ids);
 
     // Assembly.
     $assembly_ids = $this->entityQuery->get('taxonomy_term')
@@ -114,7 +116,7 @@ class CourtCase extends FormBase {
       ->execute();
 
     $currentAssembly = $form_state->getValue(['courts', 'general_assembly']);
-    $this->current_assembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
+    $this->currentAssembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
 
     $court_options = $this->getCourtOptions($form_state);
     $form['#tree'] = TRUE;
@@ -335,17 +337,6 @@ class CourtCase extends FormBase {
     ];
     // Add our witnesses fields.
     for ($counter = 0; $counter < $form_state->get('num_witnesses'); $counter++) {
-
-      $form['witnesses'][$counter]['witness_type'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Witness Type'),
-        '#options' => [
-          'defending' => $this->t('Defending'),
-          'accusing' => $this->t('Accusing'),
-        ],
-        '#prefix' => '<div class = "accomplice">',
-        '#suffix' => '</div>',
-      ];
       $form['witnesses'][$counter]['witness_name'] = [
         '#type' => 'entity_autocomplete',
         '#target_type' => 'node',
@@ -359,6 +350,18 @@ class CourtCase extends FormBase {
         '#prefix' => '<div class = "accomplice">',
         '#suffix' => '</div>',
       ];
+
+      $form['witnesses'][$counter]['witness_type'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Witness Type'),
+        '#options' => [
+          'defending' => $this->t('Defending'),
+          'accusing' => $this->t('Accusing'),
+        ],
+        '#prefix' => '<div class = "accomplice">',
+        '#suffix' => '</div>',
+      ];
+
     }
     // Button to add more names.
     $form['witnesses']['add_witness'] = [
@@ -373,7 +376,7 @@ class CourtCase extends FormBase {
     if (!$form_state->get('num_accomplices')) {
       $form_state->set('num_accomplices', 1);
     }
-    $form['names'] = [
+    $form['accomplices'] = [
       '#type' => 'details',
       '#open' => TRUE,
       '#title' => $this->t('Accomplices'),
@@ -383,7 +386,7 @@ class CourtCase extends FormBase {
 
     // Add our accomplices fields.
     for ($counter = 0; $counter < $form_state->get('num_accomplices'); $counter++) {
-      $form['names'][$counter]['accomplice_name'] = [
+      $form['accomplices'][$counter]['accomplice_name'] = [
         '#type' => 'entity_autocomplete',
         '#target_type' => 'node',
         '#title' => $this->t('Accomplice Name @num', ['@num' => ($counter + 1)]),
@@ -396,7 +399,7 @@ class CourtCase extends FormBase {
         '#prefix' => '<div class = "accomplice">',
         '#suffix' => '</div>',
       ];
-      $form['names'][$counter]['accomplice_sentence'] = [
+      $form['accomplices'][$counter]['accomplice_sentence'] = [
         '#type' => 'select',
         '#options' => [
           'convicted' => $this->t('Convicted'),
@@ -410,7 +413,7 @@ class CourtCase extends FormBase {
     }
 
     // Button to add more names.
-    $form['names']['addname'] = [
+    $form['accomplices']['addname'] = [
       '#type' => 'submit',
       '#value' => $this->t('Add another accomplice'),
       '#attributes' => ['class' => ['rounded']],
@@ -418,13 +421,6 @@ class CourtCase extends FormBase {
       '#suffix' => '</div>',
     ];
 
-    // Button to add more names.
-    $form['addname'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Add another accomplice'),
-      '#prefix' => '<div class = "clearBoth addSpace">',
-      '#suffix' => '</div>',
-    ];
     $form['properties'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Properties destroyed'),
@@ -555,10 +551,50 @@ class CourtCase extends FormBase {
         break;
 
       default:
-        foreach ($form_state->getValues() as $key => $value) {
-          \Drupal::messenger()
-            ->addMessage($key . ': ' . ($key === 'text_format' ? $value['value'] : $value));
+
+        foreach ($this->getActiveFields() as $field) {
+          $new_vals['field_' . $field] = $values[$field];
         }
+        foreach ($this->getReferenceFields() as $field) {
+          if ($values[$field]) {
+            $new_vals['field_' . $field] = ['target_id' => $values[$field]];
+          }
+        }
+        foreach (array_keys($values['courts']) as $field) {
+          if ($values['courts'][$field]) {
+            $new_vals['field_' . $field] = ['target_id' => $values['courts'][$field]];
+          }
+        }
+
+        foreach ($values['witnesses'] as $witness) {
+          if (\is_array($witness) && isset($witness['witness_name'])) {
+            $paragraph = $this->makeWitnessParagraph($witness);
+            $new_vals['field_witnesses'][] = [
+              'target_id' => $paragraph->id(),
+              'target_revision_id' => $paragraph->getRevisionId(),
+            ];
+          }
+        }
+
+        foreach ($values['accomplices'] as $accomplice) {
+          if (\is_array($accomplice) && isset($accomplice['accomplice_name'])) {
+            $paragraph = $this->makeAccompliceParagraph($accomplice);
+            $new_vals['field_accomplices'][] = [
+              'target_id' => $paragraph->id(),
+              'target_revision_id' => $paragraph->getRevisionId(),
+            ];
+          }
+        }
+        foreach ($values['observers'] as $observer) {
+          if (\is_array($observer)) {
+            $new_vals['field_observer_name'][] = ['target_id' => $observer['observer_name']];
+          }
+
+        }
+        $new_vals['title'] = $values['box_number'];
+        $new_vals['type'] = 'court_case';
+        $node = Node::create($new_vals);
+        $node->save();
     }
     // Display result.
   }
@@ -612,7 +648,7 @@ class CourtCase extends FormBase {
       $term = Term::load($id);
       $options[$term->id()] = $term->getName();
     }
-    $general_term = Term::load($this->current_assembly);
+    $general_term = Term::load($this->currentAssembly);
     $parent_id = $general_term->get('field_sector');
     $parent_term = Term::load($parent_id->getValue()[0]['target_id']);
     $id = $parent_term->id();
@@ -636,25 +672,25 @@ class CourtCase extends FormBase {
       'general_assembly' => [
         'parent' => 'sector',
         'parent_field' => 'field_sector',
-        'default' => $this->current_sector,
+        'default' => $this->currentSector,
         'vid' => 'general_assembly',
       ],
       'court_of_cell' => [
         'parent' => 'general_assembly',
         'parent_field' => 'field_general_assembly',
-        'default' => $this->current_assembly,
+        'default' => $this->currentAssembly,
         'vid' => 'court_of_cell',
       ],
       'court_of_sector' => [
         'parent' => 'general_assembly',
         'parent_field' => 'field_general_assembly',
-        'default' => $this->current_assembly,
+        'default' => $this->currentAssembly,
         'vid' => 'court_of_sector',
       ],
       'court_of_appeal' => [
         'parent' => 'general_assembly',
         'parent_field' => 'field_general_assembly',
-        'default' => $this->current_assembly,
+        'default' => $this->currentAssembly,
         'vid' => 'court_of_appeal',
       ],
     ];
@@ -671,6 +707,82 @@ class CourtCase extends FormBase {
 
     // Rebuild the form.
     $form_state->setRebuild();
+  }
+
+  private function getActiveFields() {
+    return [
+      'register_number',
+      'trial_stage',
+      'trial_level',
+      'trial_location',
+      'trial_date',
+      'new_crime',
+      'properties',
+      'outcome',
+      'sentence',
+    ];
+  }
+
+  private function getReferenceFields() {
+    return [
+      'crime',
+      'accused',
+      'plaintiff',
+    ];
+  }
+
+  /**
+   * Creates Witness paragraphs.
+   *
+   * @param $inputs
+   *   Values to build paragraph
+   *
+   * @return \Drupal\Core\Entity\EntityInterface|\Drupal\paragraphs\Entity\Paragraph
+   *   The newly constructed paragraph.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  private function makeWitnessParagraph($inputs) {
+
+    $paragraph_values = [
+      'type' => 'witnesses',
+      'field_witness_name' => [
+        'target_id' => $inputs['witness_name'],
+      ],
+      'field_witness_type' => [
+        'value' => $inputs['witness_type'],
+      ],
+    ];
+    $paragraph = Paragraph::create($paragraph_values);
+    $paragraph->save();
+    return $paragraph;
+
+  }
+
+  /**
+   * Creates Accomplice paragraphs.
+   *
+   * @param $inputs
+   *   Values to build paragraph
+   *
+   * @return \Drupal\Core\Entity\EntityInterface|\Drupal\paragraphs\Entity\Paragraph
+   *  The newly constructed paragraph.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  private function makeAccompliceParagraph($inputs) {
+    $paragraph_values = [
+      'type' => 'accomplices',
+      'field_accomplice_name' => [
+        'target_id' => $inputs['accomplice_name'],
+      ],
+      'field_accomplice_sentence' => [
+        'value' => $inputs['accomplice_sentence'],
+      ],
+    ];
+    $paragraph = Paragraph::create($paragraph_values);
+    $paragraph->save();
+    return $paragraph;
   }
 
 }
