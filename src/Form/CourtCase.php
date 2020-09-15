@@ -589,7 +589,15 @@ class CourtCase extends FormBase {
           if (\is_array($observer)) {
             $new_vals['field_observer_name'][] = ['target_id' => $observer['observer_name']];
           }
-
+        }
+        if ($values['new_crime']) {
+          $term = Term::create([
+              'name' => $values['new_crime'],
+              'vid' => 'crimes',
+            ]
+          );
+          $term->save();
+          $new_vals['field_crime']['target_id'] = $term->id();
         }
         $new_vals['title'] = $values['box_number'];
         $new_vals['type'] = 'court_case';
