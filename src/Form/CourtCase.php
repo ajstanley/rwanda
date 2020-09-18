@@ -117,6 +117,12 @@ class CourtCase extends FormBase {
 
     $currentAssembly = $form_state->getValue(['courts', 'general_assembly']);
     $this->currentAssembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
+    $convictions = [
+      'imprisonment' => $this->t("Imprisonment"),
+      'restitution' => $this->t('Restitution'),
+      'tig' => $this->t('TIG'),
+      'pardoned' => $this->t('Pardoned'),
+    ];
 
     $court_options = $this->getCourtOptions($form_state);
     $form['#tree'] = TRUE;
@@ -124,6 +130,8 @@ class CourtCase extends FormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Box Number'),
       '#description' => $this->t('5 digits'),
+      '#required' => TRUE,
+
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
@@ -347,7 +355,7 @@ class CourtCase extends FormBase {
         '#autocreate' => [
           'bundle' => 'person',
         ],
-        '#prefix' => '<div class = "accomplice">',
+        '#prefix' => '<div class = "witness">',
         '#suffix' => '</div>',
       ];
 
@@ -358,7 +366,7 @@ class CourtCase extends FormBase {
           'defending' => $this->t('Defending'),
           'accusing' => $this->t('Accusing'),
         ],
-        '#prefix' => '<div class = "accomplice">',
+        '#prefix' => '<div class = "witness">',
         '#suffix' => '</div>',
       ];
 
@@ -396,20 +404,53 @@ class CourtCase extends FormBase {
         '#autocreate' => [
           'bundle' => 'person',
         ],
+        '#prefix' => '<div class = "accomplice clearBoth">',
+        '#suffix' => '</div>',
+      ];
+      $form['accomplices'][$counter]["accomplice_decision"] = [
+        '#type' => 'select',
+        '#title' => $this->t('Court Decision @num', ['@num' => ($counter + 1)]),
+        '#description' => $this->t('If accused are found guilty or not.'),
+        '#attributes' => array('id' => 'accomplice_decision'),
+        '#options' => [
+          'guilty' => $this->t('Guilty'),
+          'acquitted' => $this->t('Acquitted'),
+        ],
+        '#prefix' => '<div class = "accomplice">',
+        '#suffix' => '</div>',
+      ];
+      $form['accomplices'][$counter]['accomplice_outcome'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Outcome @num', ['@num' => ($counter + 1)]),
+        '#options' => $convictions,
+        '#states' => [
+          'enabled' => [
+            ":input[name='accomplices[$counter][accomplice_decision]']" => ['value' => 'guilty'],
+          ],
+        ],
         '#prefix' => '<div class = "accomplice">',
         '#suffix' => '</div>',
       ];
       $form['accomplices'][$counter]['accomplice_sentence'] = [
         '#type' => 'select',
         '#options' => [
-          'convicted' => $this->t('Convicted'),
-          'acquitted' => $this->t('Acquitted'),
-          'pardoned' => $this->t('Pardoned'),
+          'life' => $this->t('Life Sentence'),
+          '1_5' => $this->t('1 to 5  years'),
+          '6_10' => $this->t('6 to 10 years'),
+          '11_20' => $this->t('11 to 20 years'),
+          '20' => $this->t('21 or more years'),
+        ],
+        '#states' => [
+          'enabled' => [
+            ":input[name='accomplices[$counter][accomplice_outcome]']" => ["value" => "imprisonment"],
+            ":input[name='accomplices[$counter][accomplice_decision]']" => ['value' => 'guilty'],
+          ],
         ],
         '#title' => $this->t('Sentence @num', ['@num' => ($counter + 1)]),
         '#prefix' => '<div class = "accomplice">',
         '#suffix' => '</div>',
       ];
+
     }
 
     // Button to add more names.
@@ -421,10 +462,43 @@ class CourtCase extends FormBase {
       '#suffix' => '</div>',
     ];
 
+    // Container for our repeating fields.
+    if (!$form_state->get('num_properties')) {
+      $form_state->set('num_properties', 1);
+    }
     $form['properties'] = [
-      '#type' => 'textarea',
-      '#title' => $this->t('Properties destroyed'),
-      '#description' => $this->t('List of properties destroyed and their numbers. Example: 5 chairs, 2 cars, 1 house,etc…'),
+      '#type' => 'details',
+      '#open' => TRUE,
+      '#title' => $this->t('Properties Destroyed'),
+      '#prefix' => '<div id ="property-box" class = "clearBoth">',
+      '#suffix' => '</div>',
+    ];
+    // Add our properties fields.
+    for ($counter = 0; $counter < $form_state->get('num_properties'); $counter++) {
+      $form['properties'][$counter]['number_of_destroyed_items'] = [
+        '#type' => 'number',
+        '#title' => $this->t('Number Destroyed @num', ['@num' => ($counter + 1)]),
+        '#size' => '5',
+        '#prefix' => '<div class = "number clearBoth">',
+        '#suffix' => '</div>',
+      ];
+
+      $form['properties'][$counter]['destroyed_item'] = [
+        '#type' => 'textfield',
+        '#title' => $this
+          ->t('Type of property destroyed @num', ['@num' => ($counter + 1)]),
+        '#prefix' => '<div class = "accomplice">',
+        '#suffix' => '</div>',
+      ];
+
+    }
+    // Button to add more names.
+    $form['properties']['add_property'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Add another property'),
+      '#attributes' => ['class' => ['rounded']],
+      '#prefix' => '<div class = "clearBoth addSpace">',
+      '#suffix' => '</div>',
     ];
     $form['decision'] = [
       '#type' => 'select',
@@ -440,12 +514,7 @@ class CourtCase extends FormBase {
     $form['outcome'] = [
       '#type' => 'select',
       '#title' => $this->t('Outcome'),
-      '#options' => [
-        'imprisonment' => $this->t("Imprisonment"),
-        'restitution' => $this->t('Restitution'),
-        'tig' => $this->t('TIG'),
-        'pardoned' => $this->t('Pardoned'),
-      ],
+      '#options' => $convictions,
       '#states' => [
         'enabled' => [
           ':input[name="decision"]' => ['value' => 'guilty'],
@@ -550,6 +619,10 @@ class CourtCase extends FormBase {
         $this->addNewFields($form, $form_state, 'num_observers');
         break;
 
+      case 'Add another property':
+        $this->addNewFields($form, $form_state, 'num_properties');
+        break;
+
       default:
 
         foreach ($this->getActiveFields() as $field) {
@@ -570,6 +643,15 @@ class CourtCase extends FormBase {
           if (\is_array($witness) && isset($witness['witness_name'])) {
             $paragraph = $this->makeWitnessParagraph($witness);
             $new_vals['field_witnesses'][] = [
+              'target_id' => $paragraph->id(),
+              'target_revision_id' => $paragraph->getRevisionId(),
+            ];
+          }
+        }
+        foreach ($values['properties'] as $property) {
+          if (\is_array($property) && isset($property['destroyed_item'])) {
+            $paragraph = $this->makePropertyParagraph($property);
+            $new_vals['field_properties_destroyed'][] = [
               'target_id' => $paragraph->id(),
               'target_revision_id' => $paragraph->getRevisionId(),
             ];
@@ -786,6 +868,40 @@ class CourtCase extends FormBase {
       ],
       'field_accomplice_sentence' => [
         'value' => $inputs['accomplice_sentence'],
+      ],
+      'field_court_decision' => [
+        'value' => $inputs['accomplice_decision'],
+      ],
+      'field_outcome' => [
+        'value' => $inputs['accomplice_outcome'],
+      ],
+
+
+    ];
+    $paragraph = Paragraph::create($paragraph_values);
+    $paragraph->save();
+    return $paragraph;
+  }
+
+  /**
+   * Creates Accomplice paragraphs.
+   *
+   * @param $inputs
+   *   Values to build paragraph
+   *
+   * @return \Drupal\Core\Entity\EntityInterface|\Drupal\paragraphs\Entity\Paragraph
+   *  The newly constructed paragraph.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  private function makePropertyParagraph($inputs) {
+    $paragraph_values = [
+      'type' => 'properties_destroyed',
+      'field_destroyed_item' => [
+        'value' => $inputs['destroyed_item'],
+      ],
+      'field_number_of_destroyed_items' => [
+        'value' => $inputs['number_of_destroyed_items'],
       ],
     ];
     $paragraph = Paragraph::create($paragraph_values);
