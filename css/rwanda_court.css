@@ -31,6 +31,12 @@ div.witness {
   display: inline;
   padding-right: 2%;
 }
+.field--name-field-observer-name {
+  float: left;
+  width: 75%;
+  display: inline;
+  padding-right: 2%;
+}
 
 div.accomplice {
   float: left;
@@ -63,4 +69,26 @@ details summary::-webkit-details-marker {
   width: 25%;
   display: inline;
   padding-right: 2%;
+}
+
+.field--name-field-accomplice-name,
+.field--name-field-accomplice-sentence,
+.field--name-field-court-decision,
+.field--name-field-outcome,
+.field--name-field-number-of-destroyed-items {
+  float: left;
+  width: 25%;
+  display: inline;
+  padding-right: 2%;
+
+}
+
+.field--name-field-witness-name,
+.field--name-field-witness-type,
+.field--name-field-destroyed-item {
+  float: left;
+  width: 50%;
+  display: inline;
+  padding-right: 2%;
+
 }

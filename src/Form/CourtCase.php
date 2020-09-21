@@ -84,7 +84,39 @@ class CourtCase extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state, Node $node = NULL) {
+    $entity = $this->entityTypeManager->getStorage('node')->create([
+      'type' => 'court_case',
+    ]);
+    $form_state->set('entity', $entity);
+    $form_display = $this->entityTypeManager->getStorage('entity_form_display')
+      ->load('node.court_case.default');
+    $form_state->set('form_display', $form_display);
+    $form['#parents'] = [];
+    $new_elements = [
+      'field_accomplices',
+      'field_properties_destroyed',
+      'field_witnesses',
+      'field_observer_name',
+    ];
+    $pararaphs = [];
+    foreach ($form_display->getComponents() as $name => $component) {
+      if (\in_array($name, $new_elements)) {
+        $widget = $form_display->getRenderer($name);
+        if (!$widget) {
+          continue;
+        }
+
+        $items = $entity->get($name);
+        $items->filterEmptyItems();
+        $pararaphs[$name] = $widget->form($items, $form, $form_state);
+        $pararaphs[$name]['#access'] = $items->access('edit');
+      }
+    }
+
+    if ($node) {
+      $form_state->set('nid', $node->id());
+    }
     // Crimes.
     $vid = 'crimes';
     $terms = $this->entityTypeManager->getStorage('taxonomy_term')
@@ -131,13 +163,14 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Box Number'),
       '#description' => $this->t('5 digits'),
       '#required' => TRUE,
-
+      '#default_value' => $node ? $node->get('title')->value : '',
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
     $form['register_number'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Register'),
+      '#default_value' => $node ? $node->get('field_register_number')->value : '',
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
@@ -152,6 +185,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="district_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('District'),
+      '#default_value' => $node ? $node->get('field_district')->value : '',
       '#description' => $this->t('Rwandan Court District'),
       // '#default_value' => $keys[0],
       '#ajax' => [
@@ -167,6 +201,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="sector_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Sector'),
+      '#default_value' => $node ? $node->get('field_sector')->value : '',
       '#description' => $this->t('Rwandan Court Sector'),
       '#ajax' => [
         'callback' => '::changeCourtsOptionsAjax',
@@ -181,6 +216,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="assembly_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('General Assembly'),
+      '#default_value' => $node ? $node->get('field_general_assembly')->value : '',
       '#description' => $this->t('Rwandan General Assembly'),
       '#ajax' => [
         'callback' => '::changeCourtsOptionsAjax',
@@ -194,6 +230,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="cell_wrapper" class = "court_selector clearBoth">',
       '#suffix' => '</div>',
       '#title' => $this->t('Court of Cell'),
+      '#default_value' => $node ? $node->get('field_court_of_cell')->value : '',
       '#description' => $this->t('Rwandan Court of Cell'),
       '#states' => [
         'enabled' => [
@@ -208,6 +245,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="court_of_sector_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Court of Sector'),
+      '#default_value' => $node ? $node->get('field_court_of_sector')->value : '',
       '#description' => $this->t('Rwandan Court of Sector'),
       '#disabled' => TRUE,
       '#states' => [
@@ -223,6 +261,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="court_of_appeal_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Court of Appeal'),
+      '#default_value' => $node ? $node->get('field_court_of_appeal')->value : '',
       '#description' => $this->t('Rwandan Court of Appeal'),
       '#disabled' => TRUE,
       '#states' => [
@@ -239,7 +278,7 @@ class CourtCase extends FormBase {
         'appeal' => $this->t('Appeal'),
       ],
       '#title' => $this->t('Court Level'),
-      '#default_value' => 'cell',
+      '#default_value' => $node ? $node->get('field_trial_level')->value : 'cell',
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
@@ -253,7 +292,7 @@ class CourtCase extends FormBase {
         'restricted' => $this->t('Restricted'),
       ],
       '#title' => $this->t('Trial Stage'),
-      '#default_value' => 'public',
+      '#default_value' => $node ? $node->get('field_trial_stage')->value : '',
     ];
     $form['trial_level'] = [
       '#type' => 'select',
@@ -266,10 +305,12 @@ class CourtCase extends FormBase {
         'appeal' => $this->t('Appeal'),
       ],
       '#title' => $this->t('Trial Level'),
-      '#default_value' => 'judgement_rendering',
+      '#default_value' => $node ? $node->get('field_trial_level')->value : '',
     ];
     $form['trial_location'] = [
       '#type' => 'textfield',
+      '#default_value' => $node ? $node->get('field_trial_stage')->value : '',
+
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Trial Location'),
@@ -329,130 +370,10 @@ class CourtCase extends FormBase {
         ],
       ],
       '#prefix' => '<div class = "court_selector">',
-      '#suffix' => '</div>',
+      '#suffix' => '</div><div class = "clearBoth"></div>',
     ];
 
-    // Container for our repeating fields.
-    if (!$form_state->get('num_witnesses')) {
-      $form_state->set('num_witnesses', 1);
-    }
-    $form['witnesses'] = [
-      '#type' => 'details',
-      '#open' => TRUE,
-      '#title' => $this->t('Witnesses'),
-      '#prefix' => '<div id ="witness-box" class = "clearBoth">',
-      '#suffix' => '</div>',
-    ];
-    // Add our witnesses fields.
-    for ($counter = 0; $counter < $form_state->get('num_witnesses'); $counter++) {
-      $form['witnesses'][$counter]['witness_name'] = [
-        '#type' => 'entity_autocomplete',
-        '#target_type' => 'node',
-        '#title' => $this->t('Witness Name'),
-        '#selection_settings' => [
-          'target_bundles' => ['person'],
-        ],
-        '#autocreate' => [
-          'bundle' => 'person',
-        ],
-        '#prefix' => '<div class = "witness">',
-        '#suffix' => '</div>',
-      ];
-
-      $form['witnesses'][$counter]['witness_type'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Witness Type'),
-        '#options' => [
-          'defending' => $this->t('Defending'),
-          'accusing' => $this->t('Accusing'),
-        ],
-        '#prefix' => '<div class = "witness">',
-        '#suffix' => '</div>',
-      ];
-
-    }
-    // Button to add more names.
-    $form['witnesses']['add_witness'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Add another witness'),
-      '#attributes' => ['class' => ['rounded']],
-      '#prefix' => '<div class = "clearBoth addSpace">',
-      '#suffix' => '</div>',
-    ];
-
-    // Container for our repeating fields.
-    if (!$form_state->get('num_accomplices')) {
-      $form_state->set('num_accomplices', 1);
-    }
-    $form['accomplices'] = [
-      '#type' => 'details',
-      '#open' => TRUE,
-      '#title' => $this->t('Accomplices'),
-      '#prefix' => '<div class = "clearBoth">',
-      '#suffix' => '</div>',
-    ];
-
-    // Add our accomplices fields.
-    for ($counter = 0; $counter < $form_state->get('num_accomplices'); $counter++) {
-      $form['accomplices'][$counter]['accomplice_name'] = [
-        '#type' => 'entity_autocomplete',
-        '#target_type' => 'node',
-        '#title' => $this->t('Accomplice Name @num', ['@num' => ($counter + 1)]),
-        '#selection_settings' => [
-          'target_bundles' => ['person'],
-        ],
-        '#autocreate' => [
-          'bundle' => 'person',
-        ],
-        '#prefix' => '<div class = "accomplice clearBoth">',
-        '#suffix' => '</div>',
-      ];
-      $form['accomplices'][$counter]["accomplice_decision"] = [
-        '#type' => 'select',
-        '#title' => $this->t('Court Decision @num', ['@num' => ($counter + 1)]),
-        '#description' => $this->t('If accused are found guilty or not.'),
-        '#attributes' => array('id' => 'accomplice_decision'),
-        '#options' => [
-          'guilty' => $this->t('Guilty'),
-          'acquitted' => $this->t('Acquitted'),
-        ],
-        '#prefix' => '<div class = "accomplice">',
-        '#suffix' => '</div>',
-      ];
-      $form['accomplices'][$counter]['accomplice_outcome'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Outcome @num', ['@num' => ($counter + 1)]),
-        '#options' => $convictions,
-        '#states' => [
-          'enabled' => [
-            ":input[name='accomplices[$counter][accomplice_decision]']" => ['value' => 'guilty'],
-          ],
-        ],
-        '#prefix' => '<div class = "accomplice">',
-        '#suffix' => '</div>',
-      ];
-      $form['accomplices'][$counter]['accomplice_sentence'] = [
-        '#type' => 'select',
-        '#options' => [
-          'life' => $this->t('Life Sentence'),
-          '1_5' => $this->t('1 to 5  years'),
-          '6_10' => $this->t('6 to 10 years'),
-          '11_20' => $this->t('11 to 20 years'),
-          '20' => $this->t('21 or more years'),
-        ],
-        '#states' => [
-          'enabled' => [
-            ":input[name='accomplices[$counter][accomplice_outcome]']" => ["value" => "imprisonment"],
-            ":input[name='accomplices[$counter][accomplice_decision]']" => ['value' => 'guilty'],
-          ],
-        ],
-        '#title' => $this->t('Sentence @num', ['@num' => ($counter + 1)]),
-        '#prefix' => '<div class = "accomplice">',
-        '#suffix' => '</div>',
-      ];
-
-    }
-
+    $form['witnesses'] = $pararaphs['field_witnesses'];
     // Button to add more names.
     $form['accomplices']['addname'] = [
       '#type' => 'submit',
@@ -461,45 +382,8 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "clearBoth addSpace">',
       '#suffix' => '</div>',
     ];
-
-    // Container for our repeating fields.
-    if (!$form_state->get('num_properties')) {
-      $form_state->set('num_properties', 1);
-    }
-    $form['properties'] = [
-      '#type' => 'details',
-      '#open' => TRUE,
-      '#title' => $this->t('Properties Destroyed'),
-      '#prefix' => '<div id ="property-box" class = "clearBoth">',
-      '#suffix' => '</div>',
-    ];
-    // Add our properties fields.
-    for ($counter = 0; $counter < $form_state->get('num_properties'); $counter++) {
-      $form['properties'][$counter]['number_of_destroyed_items'] = [
-        '#type' => 'number',
-        '#title' => $this->t('Number Destroyed @num', ['@num' => ($counter + 1)]),
-        '#size' => '5',
-        '#prefix' => '<div class = "number clearBoth">',
-        '#suffix' => '</div>',
-      ];
-
-      $form['properties'][$counter]['destroyed_item'] = [
-        '#type' => 'textfield',
-        '#title' => $this
-          ->t('Type of property destroyed @num', ['@num' => ($counter + 1)]),
-        '#prefix' => '<div class = "accomplice">',
-        '#suffix' => '</div>',
-      ];
-
-    }
-    // Button to add more names.
-    $form['properties']['add_property'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Add another property'),
-      '#attributes' => ['class' => ['rounded']],
-      '#prefix' => '<div class = "clearBoth addSpace">',
-      '#suffix' => '</div>',
-    ];
+    $form['accomplices'] = $pararaphs['field_accomplices'];
+    $form['properties'] = $pararaphs['field_properties_destroyed'];
     $form['decision'] = [
       '#type' => 'select',
       '#title' => $this->t('Court Decision'),
@@ -541,52 +425,12 @@ class CourtCase extends FormBase {
         ],
       ],
       '#prefix' => '<div class = "court_selector">',
-      '#suffix' => '</div>',
-    ];
-    if (!$form_state->get('num_observers')) {
-      $form_state->set('num_observers', 1);
-    }
-    $form['observers'] = [
-      '#type' => 'details',
-      '#open' => TRUE,
-      '#title' => $this->t('Observers'),
-      '#prefix' => '<div class = "clearBoth">',
-      '#suffix' => '</div>',
-    ];
-    // Add our witnesses fields.
-    for ($counter = 0; $counter < $form_state->get('num_observers'); $counter++) {
-      $form['observers'][$counter]['observer_name'] = [
-        '#type' => 'entity_autocomplete',
-        '#target_type' => 'node',
-        '#title' => $this->t('Observer Name'),
-        '#selection_settings' => [
-          'target_bundles' => ['person'],
-        ],
-        '#autocreate' => [
-          'bundle' => 'person',
-        ],
-        '#prefix' => '<div class = "accomplice clearBoth">',
-        '#suffix' => '</div>',
-      ];
-    }
-
-    // Button to add more names.
-    $form['observers']['add_observer'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Add another observer'),
-      '#attributes' => ['class' => ['rounded']],
-      '#prefix' => '<div class = "clearBoth addSpace">',
-      '#suffix' => '</div>',
-
+      '#suffix' => '</div><div class="clearBoth"></div>',
     ];
 
-    $form['submit'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Submit'),
-      '#prefix' => '<div class = "clearBoth">',
-      '#suffix' => '</div>',
-    ];
-    $form['#theme'] = 'rwanda_court';
+    $pararaphs['field_observer_name']['widget']['add_more']['#value'] = $this->t("Add observer");
+    $form['observers'] = $pararaphs['field_observer_name'];
+    $form['#attached']['library'][] = 'rwanda/rwanda_court';
 
     return $form;
   }
@@ -606,87 +450,76 @@ class CourtCase extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    switch ($values['op']) {
-      case 'Add another accomplice':
-        $this->addNewFields($form, $form_state, 'num_accomplices');
-        break;
 
-      case 'Add another witness':
-        $this->addNewFields($form, $form_state, 'num_witnesses');
-        break;
-
-      case 'Add another observer':
-        $this->addNewFields($form, $form_state, 'num_observers');
-        break;
-
-      case 'Add another property':
-        $this->addNewFields($form, $form_state, 'num_properties');
-        break;
-
-      default:
-
-        foreach ($this->getActiveFields() as $field) {
-          $new_vals['field_' . $field] = $values[$field];
-        }
-        foreach ($this->getReferenceFields() as $field) {
-          if ($values[$field]) {
-            $new_vals['field_' . $field] = ['target_id' => $values[$field]];
-          }
-        }
-        foreach (array_keys($values['courts']) as $field) {
-          if ($values['courts'][$field]) {
-            $new_vals['field_' . $field] = ['target_id' => $values['courts'][$field]];
-          }
-        }
-
-        foreach ($values['witnesses'] as $witness) {
-          if (\is_array($witness) && isset($witness['witness_name'])) {
-            $paragraph = $this->makeWitnessParagraph($witness);
-            $new_vals['field_witnesses'][] = [
-              'target_id' => $paragraph->id(),
-              'target_revision_id' => $paragraph->getRevisionId(),
-            ];
-          }
-        }
-        foreach ($values['properties'] as $property) {
-          if (\is_array($property) && isset($property['destroyed_item'])) {
-            $paragraph = $this->makePropertyParagraph($property);
-            $new_vals['field_properties_destroyed'][] = [
-              'target_id' => $paragraph->id(),
-              'target_revision_id' => $paragraph->getRevisionId(),
-            ];
-          }
-        }
-
-        foreach ($values['accomplices'] as $accomplice) {
-          if (\is_array($accomplice) && isset($accomplice['accomplice_name'])) {
-            $paragraph = $this->makeAccompliceParagraph($accomplice);
-            $new_vals['field_accomplices'][] = [
-              'target_id' => $paragraph->id(),
-              'target_revision_id' => $paragraph->getRevisionId(),
-            ];
-          }
-        }
-        foreach ($values['observers'] as $observer) {
-          if (\is_array($observer)) {
-            $new_vals['field_observer_name'][] = ['target_id' => $observer['observer_name']];
-          }
-        }
-        if ($values['new_crime']) {
-          $term = Term::create([
-              'name' => $values['new_crime'],
-              'vid' => 'crimes',
-            ]
-          );
-          $term->save();
-          $new_vals['field_crime']['target_id'] = $term->id();
-        }
-        $new_vals['title'] = $values['box_number'];
-        $new_vals['type'] = 'court_case';
-        $node = Node::create($new_vals);
-        $node->save();
+    foreach ($this->getActiveFields() as $field) {
+      $new_vals['field_' . $field] = $values[$field];
     }
-    // Display result.
+    foreach ($this->getReferenceFields() as $field) {
+      if ($values[$field]) {
+        $new_vals['field_' . $field] = ['target_id' => $values[$field]];
+      }
+    }
+    foreach (array_keys($values['courts']) as $field) {
+      if ($values['courts'][$field]) {
+        $new_vals['field_' . $field] = ['target_id' => $values['courts'][$field]];
+      }
+    }
+
+    foreach ($values['witnesses'] as $witness) {
+      if (\is_array($witness) && isset($witness['witness_name'])) {
+        $paragraph = $this->makeWitnessParagraph($witness);
+        $new_vals['field_witnesses'][] = [
+          'target_id' => $paragraph->id(),
+          'target_revision_id' => $paragraph->getRevisionId(),
+        ];
+      }
+    }
+    foreach ($values['properties'] as $property) {
+      if (\is_array($property) && isset($property['destroyed_item'])) {
+        $paragraph = $this->makePropertyParagraph($property);
+        $new_vals['field_properties_destroyed'][] = [
+          'target_id' => $paragraph->id(),
+          'target_revision_id' => $paragraph->getRevisionId(),
+        ];
+      }
+    }
+
+    foreach ($values['accomplices'] as $accomplice) {
+      if (\is_array($accomplice) && isset($accomplice['accomplice_name'])) {
+        $paragraph = $this->makeAccompliceParagraph($accomplice);
+        $new_vals['field_accomplices'][] = [
+          'target_id' => $paragraph->id(),
+          'target_revision_id' => $paragraph->getRevisionId(),
+        ];
+      }
+    }
+    foreach ($values['observers'] as $observer) {
+      if (\is_array($observer)) {
+        $new_vals['field_observer_name'][] = ['target_id' => $observer['observer_name']];
+      }
+    }
+    if ($values['new_crime']) {
+      $term = Term::create([
+          'name' => $values['new_crime'],
+          'vid' => 'crimes',
+        ]
+      );
+      $term->save();
+      $new_vals['field_crime']['target_id'] = $term->id();
+    }
+    $new_vals['title'] = $values['box_number'];
+    $new_vals['type'] = 'court_case';
+    if ($form_state->get('nid')) {
+      $node = Node::load($form_state->get('nid'));
+      foreach ($new_vals as $property => $value) {
+        $node->set($property, $value);
+      }
+    }
+    else {
+      $node = Node::create($new_vals);
+    }
+    $node->save();
+
   }
 
   /**
@@ -700,6 +533,7 @@ class CourtCase extends FormBase {
    * Get options for Courts.
    */
   public function getCourtOptions(FormStateInterface $form_state) {
+    $all_options = [];
     $configs = $this->buildOptionsArray();
     foreach ($configs as $key => $config) {
       $parent = $form_state->getValue($config['parent']);
@@ -806,7 +640,6 @@ class CourtCase extends FormBase {
       'trial_level',
       'trial_location',
       'trial_date',
-      'new_crime',
       'properties',
       'outcome',
       'sentence',

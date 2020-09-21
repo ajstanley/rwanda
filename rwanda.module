@@ -67,6 +67,18 @@ function rwanda_form_node_court_case_form_alter(&$form, FormStateInterface $form
 /**
  * Implements hook_form_FORM_ID_alter().
  */
+function rwanda_form_node_court_case_edit_form_alter_x(&$form, FormStateInterface $form_state, $form_id) {
+  $current_path = \Drupal::service('path.current')->getPath();
+  $parts = explode('/', $current_path);
+  $path = Url::fromRoute('rwanda.court_case.edit',
+    ['node' => $parts[2]])->toString();
+  $response = new RedirectResponse($path);
+  $response->send();
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function rwanda_form_user_login_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $form['#theme'] = 'rwanda_login';
 }
@@ -76,7 +88,48 @@ function rwanda_form_user_login_form_alter(&$form, FormStateInterface $form_stat
  */
 function rwanda_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
 
-  if ($form_id === 'user_login_form') {
-    // Unimplemented.
+  if ($form_id === 'node_court_case_form') {
+    $var = "dog";
   }
 }
+
+function rwanda_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, $context) {
+  if ($element['#paragraph_type'] != 'accomplices') {
+    return;
+  }
+  $configs = [
+    [
+      'field_name' => 'field_outcome',
+      'conditions' => ["value" => 'guilty'],
+      'controlling_field' => 'field_court_decision',
+    ],
+    [
+      'field_name' => 'field_accomplice_sentence',
+      'conditions' => ["value" => 'imprisonment'],
+      'controlling_field' => 'field_outcome',
+    ],
+    [
+      'field_name' => 'field_accomplice_sentence',
+      'conditions' => ["value" => 'guilty'],
+      'controlling_field' => 'field_court_decision',
+    ],
+  ];
+  foreach ($configs as $config) {
+    paragraph_field_state($element, $config['field_name'], $config['controlling_field'], 'enabled', $config['conditions']);
+  }
+}
+
+
+function paragraph_field_state(&$element, $field_name, $controlling_field_name, $state_key, array $conditions) {
+  if (!isset($element['subform'][$field_name])) {
+    return;
+  }
+  $subform = &$element['subform'];
+  $parents = $subform['#parents'];
+  $parents[] = $controlling_field_name;
+  $field_id = array_shift($parents);
+  $field_id .= '[' . implode('][', $parents) . ']';
+  $subform[$field_name]['#states'][$state_key][':input[name="' . $field_id . '"]'] = $conditions;
+
+}
+

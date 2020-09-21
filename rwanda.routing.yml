@@ -13,6 +13,7 @@ rwanda.registration_form_edit:
     _title: 'RegistrationForm - edit'
   requirements:
     _access: 'TRUE'
+
 rwanda.court_form:
   path: '/rwanda/form/court'
   defaults:
@@ -20,8 +21,17 @@ rwanda.court_form:
     _title: 'CourtForm'
   requirements:
     _access: 'TRUE'
+
 rwanda.court_case:
   path: '/rwanda/form/court_case'
+  defaults:
+    _form: '\Drupal\rwanda\Form\CourtCase'
+    _title: 'CourtCase'
+  requirements:
+    _access: 'TRUE'
+
+rwanda.court_case.edit:
+  path: '/rwanda/form/court_case/edit/{node}'
   defaults:
     _form: '\Drupal\rwanda\Form\CourtCase'
     _title: 'CourtCase'
