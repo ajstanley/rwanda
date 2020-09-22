@@ -85,13 +85,15 @@ class CourtCase extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, Node $node = NULL) {
-    $entity = $this->entityTypeManager->getStorage('node')->create([
-      'type' => 'court_case',
-    ]);
-  //  $node = Node::load(69);
     if ($node) {
-      $entity = $node;
+      $form_state->set('nid', $node->id());
     }
+    else {
+      $node = $this->entityTypeManager->getStorage('node')->create([
+        'type' => 'court_case',
+      ]);
+    }
+    $entity = $node;
     $form_state->set('entity', $entity);
     $form_display = $this->entityTypeManager->getStorage('entity_form_display')
       ->load('node.court_case.default');
@@ -110,16 +112,11 @@ class CourtCase extends FormBase {
         if (!$widget) {
           continue;
         }
-
         $items = $entity->get($name);
         $items->filterEmptyItems();
         $paragraphs[$name] = $widget->form($items, $form, $form_state);
         $paragraphs[$name]['#access'] = $items->access('edit');
       }
-    }
-    if ($form_state->getUserInput()) {
-      $input = $form_state->getUserInput();
-      //$paragraphs['field_witnesses'] = $input['field_witnesses'];
     }
 
     if ($node) {
@@ -195,7 +192,7 @@ class CourtCase extends FormBase {
       '#title' => $this->t('District'),
       '#default_value' => $node ? $node->get('field_district')->value : '',
       '#description' => $this->t('Rwandan Court District'),
-      // '#default_value' => $keys[0],
+      '#default_value' => $keys[0],
       '#ajax' => [
         'callback' => '::changeCourtsOptionsAjax',
         'wrapper' => 'courts_wrapper',
@@ -278,7 +275,7 @@ class CourtCase extends FormBase {
         ],
       ],
     ];
-    $form['level'] = [
+    $form['court_level'] = [
       '#type' => 'radios',
       '#options' => [
         'cell' => $this->t('Cell'),
@@ -286,7 +283,7 @@ class CourtCase extends FormBase {
         'appeal' => $this->t('Appeal'),
       ],
       '#title' => $this->t('Court Level'),
-      '#default_value' => $node ? $node->get('field_trial_level')->value : 'cell',
+      // '#default_value' => $node ? $node->get('field_court_level')->value : 'cell',
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
@@ -456,6 +453,14 @@ class CourtCase extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    if ($form_state->get('nid')) {
+      $node = Node::load($form_state->get('nid'));
+      $current = $node->get('field_witnesses');
+      $targets = $current->getValue();
+      foreach ($targets as $target) {
+        Paragraph::load($target['target_id'])->delete();
+      }
+    }
     $values = $form_state->getValues();
     $paragraph_mapping = [
       'witnesses' => 'field_witnesses',
