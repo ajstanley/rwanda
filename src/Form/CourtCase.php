@@ -88,6 +88,10 @@ class CourtCase extends FormBase {
     $entity = $this->entityTypeManager->getStorage('node')->create([
       'type' => 'court_case',
     ]);
+  //  $node = Node::load(69);
+    if ($node) {
+      $entity = $node;
+    }
     $form_state->set('entity', $entity);
     $form_display = $this->entityTypeManager->getStorage('entity_form_display')
       ->load('node.court_case.default');
@@ -99,7 +103,7 @@ class CourtCase extends FormBase {
       'field_witnesses',
       'field_observer_name',
     ];
-    $pararaphs = [];
+    $paragraphs = [];
     foreach ($form_display->getComponents() as $name => $component) {
       if (\in_array($name, $new_elements)) {
         $widget = $form_display->getRenderer($name);
@@ -109,9 +113,13 @@ class CourtCase extends FormBase {
 
         $items = $entity->get($name);
         $items->filterEmptyItems();
-        $pararaphs[$name] = $widget->form($items, $form, $form_state);
-        $pararaphs[$name]['#access'] = $items->access('edit');
+        $paragraphs[$name] = $widget->form($items, $form, $form_state);
+        $paragraphs[$name]['#access'] = $items->access('edit');
       }
+    }
+    if ($form_state->getUserInput()) {
+      $input = $form_state->getUserInput();
+      //$paragraphs['field_witnesses'] = $input['field_witnesses'];
     }
 
     if ($node) {
@@ -157,7 +165,7 @@ class CourtCase extends FormBase {
     ];
 
     $court_options = $this->getCourtOptions($form_state);
-    $form['#tree'] = TRUE;
+    //$form['#tree'] = TRUE;
     $form['box_number'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Box Number'),
@@ -373,17 +381,11 @@ class CourtCase extends FormBase {
       '#suffix' => '</div><div class = "clearBoth"></div>',
     ];
 
-    $form['witnesses'] = $pararaphs['field_witnesses'];
-    // Button to add more names.
-    $form['accomplices']['addname'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Add another accomplice'),
-      '#attributes' => ['class' => ['rounded']],
-      '#prefix' => '<div class = "clearBoth addSpace">',
-      '#suffix' => '</div>',
-    ];
-    $form['accomplices'] = $pararaphs['field_accomplices'];
-    $form['properties'] = $pararaphs['field_properties_destroyed'];
+    $form['witnesses'] = $paragraphs['field_witnesses'];
+    $form['accomplices'] = $paragraphs['field_accomplices'];
+    $form['properties'] = $paragraphs['field_properties_destroyed'];
+    $paragraphs['field_observer_name']['widget']['add_more']['#value'] = $this->t("Add observer");
+    $form['observers'] = $paragraphs['field_observer_name'];
     $form['decision'] = [
       '#type' => 'select',
       '#title' => $this->t('Court Decision'),
@@ -428,9 +430,14 @@ class CourtCase extends FormBase {
       '#suffix' => '</div><div class="clearBoth"></div>',
     ];
 
-    $pararaphs['field_observer_name']['widget']['add_more']['#value'] = $this->t("Add observer");
-    $form['observers'] = $pararaphs['field_observer_name'];
+
     $form['#attached']['library'][] = 'rwanda/rwanda_court';
+    $form['submit'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Submit'),
+      '#prefix' => '<div class = "clearBoth">',
+      '#suffix' => '</div>',
+    ];
 
     return $form;
   }
@@ -450,6 +457,11 @@ class CourtCase extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
+    $paragraph_mapping = [
+      'witnesses' => 'field_witnesses',
+      'accomplices' => 'field_accomplices',
+      'properties_destroyed' => 'field_properties_destroyed',
+    ];
 
     foreach ($this->getActiveFields() as $field) {
       $new_vals['field_' . $field] = $values[$field];
@@ -465,35 +477,23 @@ class CourtCase extends FormBase {
       }
     }
 
-    foreach ($values['witnesses'] as $witness) {
-      if (\is_array($witness) && isset($witness['witness_name'])) {
-        $paragraph = $this->makeWitnessParagraph($witness);
-        $new_vals['field_witnesses'][] = [
-          'target_id' => $paragraph->id(),
-          'target_revision_id' => $paragraph->getRevisionId(),
-        ];
-      }
-    }
-    foreach ($values['properties'] as $property) {
-      if (\is_array($property) && isset($property['destroyed_item'])) {
-        $paragraph = $this->makePropertyParagraph($property);
-        $new_vals['field_properties_destroyed'][] = [
+    foreach ($paragraph_mapping as $type => $field) {
+      foreach ($values[$field] as $candidate) {
+        $subform = $candidate['subform'];
+        if (!$subform) {
+          continue;
+        }
+        $paragraph_values = $this->parseSubform($subform, $type);
+        $paragraph = Paragraph::create($paragraph_values);
+        $paragraph->save();
+        $new_vals[$field][] = [
           'target_id' => $paragraph->id(),
           'target_revision_id' => $paragraph->getRevisionId(),
         ];
       }
     }
 
-    foreach ($values['accomplices'] as $accomplice) {
-      if (\is_array($accomplice) && isset($accomplice['accomplice_name'])) {
-        $paragraph = $this->makeAccompliceParagraph($accomplice);
-        $new_vals['field_accomplices'][] = [
-          'target_id' => $paragraph->id(),
-          'target_revision_id' => $paragraph->getRevisionId(),
-        ];
-      }
-    }
-    foreach ($values['observers'] as $observer) {
+    foreach ($values['field_observer_name'] as $observer) {
       if (\is_array($observer)) {
         $new_vals['field_observer_name'][] = ['target_id' => $observer['observer_name']];
       }
@@ -519,7 +519,6 @@ class CourtCase extends FormBase {
       $node = Node::create($new_vals);
     }
     $node->save();
-
   }
 
   /**
@@ -620,18 +619,6 @@ class CourtCase extends FormBase {
     ];
   }
 
-  /**
-   * Handle adding new.
-   */
-  private function addNewFields(array &$form, FormStateInterface $form_state, string $counter) {
-
-    // Add 1 to the number of names.
-    $current = $form_state->get($counter);
-    $form_state->set($counter, ($current + 1));
-
-    // Rebuild the form.
-    $form_state->setRebuild();
-  }
 
   private function getActiveFields() {
     return [
@@ -640,7 +627,6 @@ class CourtCase extends FormBase {
       'trial_level',
       'trial_location',
       'trial_date',
-      'properties',
       'outcome',
       'sentence',
     ];
@@ -670,10 +656,10 @@ class CourtCase extends FormBase {
     $paragraph_values = [
       'type' => 'witnesses',
       'field_witness_name' => [
-        'target_id' => $inputs['witness_name'],
+        'target_id' => $inputs['field_witness_name'][0]['target_id'],
       ],
       'field_witness_type' => [
-        'value' => $inputs['witness_type'],
+        'value' => $inputs['field_witness_type'][0]['value'],
       ],
     ];
     $paragraph = Paragraph::create($paragraph_values);
@@ -740,6 +726,14 @@ class CourtCase extends FormBase {
     $paragraph = Paragraph::create($paragraph_values);
     $paragraph->save();
     return $paragraph;
+  }
+
+  private function parseSubform(array $subform, string $type) {
+    $parsed['type'] = $type;
+    foreach ($subform as $field => $element) {
+      $parsed[$field] = $element[0];
+    }
+    return $parsed;
   }
 
 }

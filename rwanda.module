@@ -67,7 +67,7 @@ function rwanda_form_node_court_case_form_alter(&$form, FormStateInterface $form
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function rwanda_form_node_court_case_edit_form_alter_x(&$form, FormStateInterface $form_state, $form_id) {
+function rwanda_form_node_court_case_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $current_path = \Drupal::service('path.current')->getPath();
   $parts = explode('/', $current_path);
   $path = Url::fromRoute('rwanda.court_case.edit',
@@ -89,7 +89,7 @@ function rwanda_form_user_login_form_alter(&$form, FormStateInterface $form_stat
 function rwanda_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
 
   if ($form_id === 'node_court_case_form') {
-    $var = "dog";
+    // unimplemented
   }
 }
 
