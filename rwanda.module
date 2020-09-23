@@ -93,8 +93,11 @@ function rwanda_form_alter(array &$form, FormStateInterface $form_state, $form_i
   }
 }
 
+/**
+ * Implements hook_field_widget_entity_reference_paragraphs_form_alter().
+ */
 function rwanda_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, $context) {
-  if ($element['#paragraph_type'] != 'accomplices') {
+  if (isset($element['#paragraph_type']) && $element['#paragraph_type'] != 'accomplices') {
     return;
   }
   $configs = [
@@ -119,7 +122,20 @@ function rwanda_field_widget_entity_reference_paragraphs_form_alter(&$element, &
   }
 }
 
-
+/**
+ * Utility Function to add states to Paragraphs.
+ *
+ * @param $element
+ *   The element being receiving State restrictions.
+ * @param $field_name
+ *   The field who's parameters are changed
+ * @param $controlling_field_name
+ *   The fiels whose state affects the field.
+ * @param $state_key
+ *   The selected state
+ * @param array $conditions
+ *   The conditionsn to be met.
+ */
 function paragraph_field_state(&$element, $field_name, $controlling_field_name, $state_key, array $conditions) {
   if (!isset($element['subform'][$field_name])) {
     return;

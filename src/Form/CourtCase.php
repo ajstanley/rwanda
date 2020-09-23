@@ -87,6 +87,10 @@ class CourtCase extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, Node $node = NULL) {
     if ($node) {
       $form_state->set('nid', $node->id());
+      $cos_val = \is_array($node->get('field_court_of_sector')->getValue()) ? $node->get('field_court_of_sector')->getValue() : '';
+      $coc_val = \is_array($node->get('field_court_of_cell')->getValue()) ? $node->get('field_court_of_cell')->getValue() : '';
+      $coa_val = \is_array($node->get('field_court_of_appeal')->getValue()) ? $node->get('field_court_of_appeal')->getValue() : '';
+      $sector_val = \is_array($node->get('field_sector')->getValue()) ? $node->get('field_sector')->getValue() : '';
     }
     else {
       $node = $this->entityTypeManager->getStorage('node')->create([
@@ -140,6 +144,9 @@ class CourtCase extends FormBase {
     }
     $keys = \array_keys($term_data);
     $district = $form_state->getValue(['courts', 'district']);
+    if ($node) {
+      $district = $node->get('field_district')->getValue()[0]['target_id'];
+    }
     $this->currentDistrict = $district ? $district : $keys[0];
     $sector_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_district', $keys[0])
@@ -162,7 +169,6 @@ class CourtCase extends FormBase {
     ];
 
     $court_options = $this->getCourtOptions($form_state);
-    //$form['#tree'] = TRUE;
     $form['box_number'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Box Number'),
@@ -190,9 +196,9 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="district_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('District'),
-      '#default_value' => $node ? $node->get('field_district')->value : '',
+      '#default_value' => $node ? $node->get('field_district')
+        ->getValue()[0] : $keys[0],
       '#description' => $this->t('Rwandan Court District'),
-      '#default_value' => $keys[0],
       '#ajax' => [
         'callback' => '::changeCourtsOptionsAjax',
         'wrapper' => 'courts_wrapper',
@@ -206,7 +212,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="sector_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Sector'),
-      '#default_value' => $node ? $node->get('field_sector')->value : '',
+      '#default_value' => $node ? $sector_val : '',
       '#description' => $this->t('Rwandan Court Sector'),
       '#ajax' => [
         'callback' => '::changeCourtsOptionsAjax',
@@ -221,7 +227,8 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="assembly_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('General Assembly'),
-      '#default_value' => $node ? $node->get('field_general_assembly')->value : '',
+      '#default_value' => $node ? $node->get('field_general_assembly')
+        ->getValue()[0] : '',
       '#description' => $this->t('Rwandan General Assembly'),
       '#ajax' => [
         'callback' => '::changeCourtsOptionsAjax',
@@ -235,11 +242,11 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="cell_wrapper" class = "court_selector clearBoth">',
       '#suffix' => '</div>',
       '#title' => $this->t('Court of Cell'),
-      '#default_value' => $node ? $node->get('field_court_of_cell')->value : '',
+      '#default_value' => $node ? $coc_val : '',
       '#description' => $this->t('Rwandan Court of Cell'),
       '#states' => [
         'enabled' => [
-          ':input[name="level"]' => ['value' => 'cell'],
+          ':input[name="court_level"]' => ['value' => 'cell'],
         ],
       ],
     ];
@@ -250,12 +257,12 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="court_of_sector_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Court of Sector'),
-      '#default_value' => $node ? $node->get('field_court_of_sector')->value : '',
+      '#default_value' => $node ? $cos_val : '',
       '#description' => $this->t('Rwandan Court of Sector'),
       '#disabled' => TRUE,
       '#states' => [
         'enabled' => [
-          ':input[name="level"]' => ['value' => 'sector'],
+          ':input[name="court_level"]' => ['value' => 'sector'],
         ],
       ],
     ];
@@ -266,12 +273,12 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="court_of_appeal_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Court of Appeal'),
-      '#default_value' => $node ? $node->get('field_court_of_appeal')->value : '',
+      '#default_value' => $node ? $coa_val : '',
       '#description' => $this->t('Rwandan Court of Appeal'),
       '#disabled' => TRUE,
       '#states' => [
         'enabled' => [
-          ':input[name="level"]' => ['value' => 'appeal'],
+          ':input[name="court_level"]' => ['value' => 'appeal'],
         ],
       ],
     ];
@@ -283,7 +290,7 @@ class CourtCase extends FormBase {
         'appeal' => $this->t('Appeal'),
       ],
       '#title' => $this->t('Court Level'),
-      // '#default_value' => $node ? $node->get('field_court_level')->value : 'cell',
+      '#default_value' => $node ? $node->get('field_court_level')->value : 'cell',
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
@@ -314,7 +321,7 @@ class CourtCase extends FormBase {
     ];
     $form['trial_location'] = [
       '#type' => 'textfield',
-      '#default_value' => $node ? $node->get('field_trial_stage')->value : '',
+      '#default_value' => $node ? $node->get('field_trial_location')->value : '',
 
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
@@ -325,16 +332,13 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Trial Date'),
-      '#default_value' => [
-        'year' => 2020,
-        'month' => 2,
-        'day' => 15,
-      ],
+      '#default_value' => $node ? $node->get('field_trial_date')->value :'1990-01-01',
     ];
     $form['accused'] = [
       '#type' => 'entity_autocomplete',
       '#target_type' => 'node',
       '#title' => $this->t('Accused'),
+      '#default_value' => $node ? Node::load($node->get('field_accused')->getValue()[0]['target_id']) : '',
       '#description' => $this->t('Select accused.'),
       '#selection_settings' => [
         'target_bundles' => ['person'],
@@ -350,6 +354,7 @@ class CourtCase extends FormBase {
       '#target_type' => 'node',
       '#title' => $this->t('Plaintiff'),
       '#description' => $this->t('Select plaintiff.'),
+      '#default_value' => $node ? Node::load($node->get('field_plaintiff')->getValue()[0]['target_id']) : '',
       '#selection_settings' => [
         'target_bundles' => ['person'],
       ],
@@ -359,10 +364,13 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "participants">',
       '#suffix' => '</div>',
     ];
+
     $form['crime'] = [
       '#type' => 'select',
       '#title' => $this->t('Crime'),
       '#options' => $crime_data,
+      '#default_value' => $node ?  $node->get('field_crime')->getValue()[0]['target_id'] : '',
+
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
@@ -458,7 +466,10 @@ class CourtCase extends FormBase {
       $current = $node->get('field_witnesses');
       $targets = $current->getValue();
       foreach ($targets as $target) {
-        Paragraph::load($target['target_id'])->delete();
+        $paragraph = Paragraph::load($target['target_id']);
+        if ($paragraph) {
+          $paragraph->delete();
+        }
       }
     }
     $values = $form_state->getValues();
@@ -476,31 +487,28 @@ class CourtCase extends FormBase {
         $new_vals['field_' . $field] = ['target_id' => $values[$field]];
       }
     }
-    foreach (array_keys($values['courts']) as $field) {
-      if ($values['courts'][$field]) {
-        $new_vals['field_' . $field] = ['target_id' => $values['courts'][$field]];
-      }
-    }
 
     foreach ($paragraph_mapping as $type => $field) {
       foreach ($values[$field] as $candidate) {
-        $subform = $candidate['subform'];
-        if (!$subform) {
-          continue;
+        if (isset($candidate['subform'])) {
+          $subform = $candidate['subform'];
+          $paragraph_values = $this->parseSubform($subform, $type);
+          if (\count($paragraph_values) > 1) {
+            $paragraph = Paragraph::create($paragraph_values);
+            $paragraph->save();
+            $new_vals[$field][] = [
+              'target_id' => $paragraph->id(),
+              'target_revision_id' => $paragraph->getRevisionId(),
+            ];
+          }
+
         }
-        $paragraph_values = $this->parseSubform($subform, $type);
-        $paragraph = Paragraph::create($paragraph_values);
-        $paragraph->save();
-        $new_vals[$field][] = [
-          'target_id' => $paragraph->id(),
-          'target_revision_id' => $paragraph->getRevisionId(),
-        ];
       }
     }
 
     foreach ($values['field_observer_name'] as $observer) {
-      if (\is_array($observer)) {
-        $new_vals['field_observer_name'][] = ['target_id' => $observer['observer_name']];
+      if (\is_array($observer) && $observer['target_id']) {
+        $new_vals['field_observer_name'][] = ['target_id' => $observer['target_id']];
       }
     }
     if ($values['new_crime']) {
@@ -514,6 +522,7 @@ class CourtCase extends FormBase {
     }
     $new_vals['title'] = $values['box_number'];
     $new_vals['type'] = 'court_case';
+    $new_vals = \array_filter($new_vals);
     if ($form_state->get('nid')) {
       $node = Node::load($form_state->get('nid'));
       foreach ($new_vals as $property => $value) {
@@ -627,6 +636,12 @@ class CourtCase extends FormBase {
 
   private function getActiveFields() {
     return [
+      'district',
+      'sector',
+      'general_assembly',
+      'court_of_cell',
+      'court_of_sector',
+      'court_of_appeal',
       'register_number',
       'trial_stage',
       'trial_level',
@@ -634,6 +649,7 @@ class CourtCase extends FormBase {
       'trial_date',
       'outcome',
       'sentence',
+      'court_level',
     ];
   }
 
@@ -645,98 +661,15 @@ class CourtCase extends FormBase {
     ];
   }
 
-  /**
-   * Creates Witness paragraphs.
-   *
-   * @param $inputs
-   *   Values to build paragraph
-   *
-   * @return \Drupal\Core\Entity\EntityInterface|\Drupal\paragraphs\Entity\Paragraph
-   *   The newly constructed paragraph.
-   *
-   * @throws \Drupal\Core\Entity\EntityStorageException
-   */
-  private function makeWitnessParagraph($inputs) {
-
-    $paragraph_values = [
-      'type' => 'witnesses',
-      'field_witness_name' => [
-        'target_id' => $inputs['field_witness_name'][0]['target_id'],
-      ],
-      'field_witness_type' => [
-        'value' => $inputs['field_witness_type'][0]['value'],
-      ],
-    ];
-    $paragraph = Paragraph::create($paragraph_values);
-    $paragraph->save();
-    return $paragraph;
-
-  }
-
-  /**
-   * Creates Accomplice paragraphs.
-   *
-   * @param $inputs
-   *   Values to build paragraph
-   *
-   * @return \Drupal\Core\Entity\EntityInterface|\Drupal\paragraphs\Entity\Paragraph
-   *  The newly constructed paragraph.
-   *
-   * @throws \Drupal\Core\Entity\EntityStorageException
-   */
-  private function makeAccompliceParagraph($inputs) {
-    $paragraph_values = [
-      'type' => 'accomplices',
-      'field_accomplice_name' => [
-        'target_id' => $inputs['accomplice_name'],
-      ],
-      'field_accomplice_sentence' => [
-        'value' => $inputs['accomplice_sentence'],
-      ],
-      'field_court_decision' => [
-        'value' => $inputs['accomplice_decision'],
-      ],
-      'field_outcome' => [
-        'value' => $inputs['accomplice_outcome'],
-      ],
-
-
-    ];
-    $paragraph = Paragraph::create($paragraph_values);
-    $paragraph->save();
-    return $paragraph;
-  }
-
-  /**
-   * Creates Accomplice paragraphs.
-   *
-   * @param $inputs
-   *   Values to build paragraph
-   *
-   * @return \Drupal\Core\Entity\EntityInterface|\Drupal\paragraphs\Entity\Paragraph
-   *  The newly constructed paragraph.
-   *
-   * @throws \Drupal\Core\Entity\EntityStorageException
-   */
-  private function makePropertyParagraph($inputs) {
-    $paragraph_values = [
-      'type' => 'properties_destroyed',
-      'field_destroyed_item' => [
-        'value' => $inputs['destroyed_item'],
-      ],
-      'field_number_of_destroyed_items' => [
-        'value' => $inputs['number_of_destroyed_items'],
-      ],
-    ];
-    $paragraph = Paragraph::create($paragraph_values);
-    $paragraph->save();
-    return $paragraph;
-  }
-
   private function parseSubform(array $subform, string $type) {
     $parsed['type'] = $type;
     foreach ($subform as $field => $element) {
-      $parsed[$field] = $element[0];
+      if ($element) {
+        $values = \array_values($element[0]);
+        if ($values[0]) {
+          $parsed[$field] = $element[0];
+        }
+      }
     }
     return $parsed;
   }
