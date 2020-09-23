@@ -92,10 +92,14 @@ class CourtCase extends FormBase {
     if ($node) {
       $entity = $node;
       $form_state->set('nid', $node->id());
-      $cos_val = \is_array($node->get('field_court_of_sector')->getValue()) ? $node->get('field_court_of_sector')->getValue() : '';
-      $coc_val = \is_array($node->get('field_court_of_cell')->getValue()) ? $node->get('field_court_of_cell')->getValue() : '';
-      $coa_val = \is_array($node->get('field_court_of_appeal')->getValue()) ? $node->get('field_court_of_appeal')->getValue() : '';
-      $sector_val = \is_array($node->get('field_sector')->getValue()) ? $node->get('field_sector')->getValue() : '';
+      $cos_val = \is_array($node->get('field_court_of_sector')
+        ->getValue()) ? $node->get('field_court_of_sector')->getValue() : '';
+      $coc_val = \is_array($node->get('field_court_of_cell')
+        ->getValue()) ? $node->get('field_court_of_cell')->getValue() : '';
+      $coa_val = \is_array($node->get('field_court_of_appeal')
+        ->getValue()) ? $node->get('field_court_of_appeal')->getValue() : '';
+      $sector_val = \is_array($node->get('field_sector')
+        ->getValue()) ? $node->get('field_sector')->getValue() : '';
     }
 
     $form_state->set('entity', $entity);
@@ -332,13 +336,14 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Trial Date'),
-      '#default_value' => $node ? $node->get('field_trial_date')->value :'1990-01-01',
+      '#default_value' => $node ? $node->get('field_trial_date')->value : '1990-01-01',
     ];
     $form['accused'] = [
       '#type' => 'entity_autocomplete',
       '#target_type' => 'node',
       '#title' => $this->t('Accused'),
-      '#default_value' => $node ? Node::load($node->get('field_accused')->getValue()[0]['target_id']) : '',
+      '#default_value' => $node ? Node::load($node->get('field_accused')
+        ->getValue()[0]['target_id']) : '',
       '#description' => $this->t('Select accused.'),
       '#selection_settings' => [
         'target_bundles' => ['person'],
@@ -354,7 +359,8 @@ class CourtCase extends FormBase {
       '#target_type' => 'node',
       '#title' => $this->t('Plaintiff'),
       '#description' => $this->t('Select plaintiff.'),
-      '#default_value' => $node ? Node::load($node->get('field_plaintiff')->getValue()[0]['target_id']) : '',
+      '#default_value' => $node ? Node::load($node->get('field_plaintiff')
+        ->getValue()[0]['target_id']) : '',
       '#selection_settings' => [
         'target_bundles' => ['person'],
       ],
@@ -369,7 +375,8 @@ class CourtCase extends FormBase {
       '#type' => 'select',
       '#title' => $this->t('Crime'),
       '#options' => $crime_data,
-      '#default_value' => $node ?  $node->get('field_crime')->getValue()[0]['target_id'] : '',
+      '#default_value' => $node ? $node->get('field_crime')
+        ->getValue()[0]['target_id'] : '',
 
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
@@ -434,7 +441,6 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div><div class="clearBoth"></div>',
     ];
-
 
     $form['#attached']['library'][] = 'rwanda/rwanda_court';
     $form['submit'] = [
@@ -512,11 +518,7 @@ class CourtCase extends FormBase {
       }
     }
     if ($values['new_crime']) {
-      $term = Term::create([
-          'name' => $values['new_crime'],
-          'vid' => 'crimes',
-        ]
-      );
+      $term = Term::create(['name' => $values['new_crime'], 'vid' => 'crimes']);
       $term->save();
       $new_vals['field_crime']['target_id'] = $term->id();
     }
@@ -633,7 +635,12 @@ class CourtCase extends FormBase {
     ];
   }
 
-
+  /**
+   * Return array of single valued fields.
+   *
+   * @return array
+   *   Array of active fields
+   */
   private function getActiveFields() {
     return [
       'district',
@@ -653,6 +660,12 @@ class CourtCase extends FormBase {
     ];
   }
 
+  /**
+   * Returns array of referenced fields.
+   *
+   * @return array
+   *   Array of referenced fields.
+   */
   private function getReferenceFields() {
     return [
       'crime',
@@ -661,6 +674,17 @@ class CourtCase extends FormBase {
     ];
   }
 
+  /**
+   * Parses subform to populate Paragraphs.
+   *
+   * @param array $subform
+   *   The subfom to parse
+   * @param string $type
+   *  The Paragraph machine name.
+   *
+   * @return array
+   *   The parsed subform.
+   */
   private function parseSubform(array $subform, string $type) {
     $parsed['type'] = $type;
     foreach ($subform as $field => $element) {
