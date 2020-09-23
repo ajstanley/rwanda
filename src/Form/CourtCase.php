@@ -85,19 +85,19 @@ class CourtCase extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, Node $node = NULL) {
+    $entity = $this->entityTypeManager->getStorage('node')->create([
+      'type' => 'court_case',
+    ]);
+
     if ($node) {
+      $entity = $node;
       $form_state->set('nid', $node->id());
       $cos_val = \is_array($node->get('field_court_of_sector')->getValue()) ? $node->get('field_court_of_sector')->getValue() : '';
       $coc_val = \is_array($node->get('field_court_of_cell')->getValue()) ? $node->get('field_court_of_cell')->getValue() : '';
       $coa_val = \is_array($node->get('field_court_of_appeal')->getValue()) ? $node->get('field_court_of_appeal')->getValue() : '';
       $sector_val = \is_array($node->get('field_sector')->getValue()) ? $node->get('field_sector')->getValue() : '';
     }
-    else {
-      $node = $this->entityTypeManager->getStorage('node')->create([
-        'type' => 'court_case',
-      ]);
-    }
-    $entity = $node;
+
     $form_state->set('entity', $entity);
     $form_display = $this->entityTypeManager->getStorage('entity_form_display')
       ->load('node.court_case.default');
