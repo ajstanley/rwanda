@@ -151,7 +151,7 @@ class CourtCase extends FormBase {
     $sector_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_district', $keys[0])
       ->execute();
-    $currentSector = $form_state->getValue(['courts', 'sector']);
+    $currentSector = $form_state->getValue('sector');
     $this->currentSector = $currentSector ? $currentSector : reset($sector_ids);
 
     // Assembly.
@@ -159,7 +159,7 @@ class CourtCase extends FormBase {
       ->condition('field_sector', reset($sector_ids))
       ->execute();
 
-    $currentAssembly = $form_state->getValue(['courts', 'general_assembly']);
+    $currentAssembly = $form_state->getValue('general_assembly');
     $this->currentAssembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
     $convictions = [
       'imprisonment' => $this->t("Imprisonment"),
