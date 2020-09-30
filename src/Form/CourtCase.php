@@ -307,7 +307,7 @@ class CourtCase extends FormBase {
         'absentia' => $this->t('In Absentia'),
         'restricted' => $this->t('Restricted'),
       ],
-      '#title' => $this->t('Trial Stage'),
+      '#title' => $this->t('Trial Type'),
       '#default_value' => $node ? $node->get('field_trial_stage')->value : '',
     ];
     $form['trial_level'] = [
@@ -320,7 +320,7 @@ class CourtCase extends FormBase {
         'review' => $this->t('Review'),
         'appeal' => $this->t('Appeal'),
       ],
-      '#title' => $this->t('Trial Level'),
+      '#title' => $this->t('Trial Stage'),
       '#default_value' => $node ? $node->get('field_trial_level')->value : '',
     ];
     $form['trial_location'] = [
@@ -338,39 +338,6 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Trial Date'),
       '#default_value' => $node ? $node->get('field_trial_date')->value : '1990-01-01',
     ];
-    $form['accused'] = [
-      '#type' => 'entity_autocomplete',
-      '#target_type' => 'node',
-      '#title' => $this->t('Accused'),
-      '#default_value' => $node ? Node::load($node->get('field_accused')
-        ->getValue()[0]['target_id']) : '',
-      '#description' => $this->t('Select accused.'),
-      '#selection_settings' => [
-        'target_bundles' => ['person'],
-      ],
-      '#autocreate' => [
-        'bundle' => 'person',
-      ],
-      '#prefix' => '<div class = "clearBoth participants">',
-      '#suffix' => '</div>',
-    ];
-    $form['plaintiff'] = [
-      '#type' => 'entity_autocomplete',
-      '#target_type' => 'node',
-      '#title' => $this->t('Plaintiff'),
-      '#description' => $this->t('Select plaintiff.'),
-      '#default_value' => $node ? Node::load($node->get('field_plaintiff')
-        ->getValue()[0]['target_id']) : '',
-      '#selection_settings' => [
-        'target_bundles' => ['person'],
-      ],
-      '#autocreate' => [
-        'bundle' => 'person',
-      ],
-      '#prefix' => '<div class = "participants">',
-      '#suffix' => '</div>',
-    ];
-
     $form['crime'] = [
       '#type' => 'select',
       '#title' => $this->t('Crime'),
@@ -393,11 +360,23 @@ class CourtCase extends FormBase {
       '#suffix' => '</div><div class = "clearBoth"></div>',
     ];
 
-    $form['witnesses'] = $paragraphs['field_witnesses'];
-    $form['accomplices'] = $paragraphs['field_accomplices'];
-    $form['properties'] = $paragraphs['field_properties_destroyed'];
-    $paragraphs['field_observer_name']['widget']['add_more']['#value'] = $this->t("Add observer");
-    $form['observers'] = $paragraphs['field_observer_name'];
+    $form['accused'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'node',
+      '#title' => $this->t('Accused'),
+      '#default_value' => $node ? Node::load($node->get('field_accused')
+        ->getValue()[0]['target_id']) : '',
+      '#description' => $this->t('Select accused.'),
+      '#selection_settings' => [
+        'target_bundles' => ['person'],
+      ],
+      '#autocreate' => [
+        'bundle' => 'person',
+      ],
+      '#prefix' => '<div class = "clearBoth accomplice">',
+      '#suffix' => '</div>',
+    ];
+
     $form['decision'] = [
       '#type' => 'select',
       '#title' => $this->t('Court Decision'),
@@ -406,7 +385,7 @@ class CourtCase extends FormBase {
         'guilty' => $this->t('Guilty'),
         'acquitted' => $this->t('Acquitted'),
       ],
-      '#prefix' => '<div class = "court_selector clearBoth">',
+      '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
     $form['outcome'] = [
@@ -441,6 +420,31 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div><div class="clearBoth"></div>',
     ];
+
+
+    $form['plaintiff'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'node',
+      '#title' => $this->t('Plaintiff'),
+      '#description' => $this->t('Select plaintiff.'),
+      '#default_value' => $node ? Node::load($node->get('field_plaintiff')
+        ->getValue()[0]['target_id']) : '',
+      '#selection_settings' => [
+        'target_bundles' => ['person'],
+      ],
+      '#autocreate' => [
+        'bundle' => 'person',
+      ],
+      '#prefix' => '<div class = "clearBoth participants">',
+      '#suffix' => '</div>',
+    ];
+
+
+    $form['witnesses'] = $paragraphs['field_witnesses'];
+    $form['accomplices'] = $paragraphs['field_accomplices'];
+    $form['properties'] = $paragraphs['field_properties_destroyed'];
+    $paragraphs['field_observer_name']['widget']['add_more']['#value'] = $this->t("Add observer");
+    $form['observers'] = $paragraphs['field_observer_name'];
 
     $form['#attached']['library'][] = 'rwanda/rwanda_court';
     $form['submit'] = [
