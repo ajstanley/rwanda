@@ -46,6 +46,7 @@ class RegistrationForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, Node $node = NULL) {
+    $current_roles =  $this->currentUser()->getRoles();
     if ($node) {
       $form_state->set('nid', $node->id());
     }
@@ -146,6 +147,7 @@ class RegistrationForm extends FormBase {
     $form['registrants'][4]['approval_status'] = [
       '#title' => t('Approval Status'),
       '#type' => 'select',
+      '#disabled' => !\in_array('administrator', $current_roles),
       '#options' => [
         'pending' => t('Pending'),
         'approved' => t('Approved'),
