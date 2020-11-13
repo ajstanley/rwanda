@@ -168,6 +168,7 @@ class CourtCase extends FormBase {
     $convictions = [
       'imprisonment' => $this->t("Imprisonment"),
       'restitution' => $this->t('Restitution'),
+      'imprisonmentandrestitution' => $this->t('Imprisonment and Restitution'),
       'tig' => $this->t('TIG'),
       'pardoned' => $this->t('Pardoned'),
     ];
@@ -364,8 +365,7 @@ class CourtCase extends FormBase {
       '#type' => 'entity_autocomplete',
       '#target_type' => 'node',
       '#title' => $this->t('Accused'),
-      '#default_value' => $node ? Node::load($node->get('field_accused')
-        ->getValue()[0]['target_id']) : '',
+      '#default_value' => $node ? $node->field_accused->entity : '',
       '#description' => $this->t('Select accused.'),
       '#selection_settings' => [
         'target_bundles' => ['person'],
@@ -392,6 +392,7 @@ class CourtCase extends FormBase {
       '#type' => 'select',
       '#title' => $this->t('Outcome'),
       '#options' => $convictions,
+
       '#states' => [
         'enabled' => [
           ':input[name="decision"]' => ['value' => 'guilty'],
@@ -413,8 +414,8 @@ class CourtCase extends FormBase {
       ],
       '#states' => [
         'enabled' => [
-          ':input[name="outcome"]' => ['value' => 'imprisonment'],
           ':input[name="decision"]' => ['value' => 'guilty'],
+          ':input[name="outcome"]' => ['value' => 'imprisonment'],
         ],
       ],
       '#prefix' => '<div class = "court_selector">',
@@ -427,8 +428,7 @@ class CourtCase extends FormBase {
       '#target_type' => 'node',
       '#title' => $this->t('Plaintiff'),
       '#description' => $this->t('Select plaintiff.'),
-      '#default_value' => $node ? Node::load($node->get('field_plaintiff')
-        ->getValue()[0]['target_id']) : '',
+      '#default_value' => $node ? $node->field_plaintiff->entity : '',
       '#selection_settings' => [
         'target_bundles' => ['person'],
       ],
@@ -493,9 +493,7 @@ class CourtCase extends FormBase {
       $new_vals['field_' . $field] = $values[$field];
     }
     foreach ($this->getReferenceFields() as $field) {
-      if ($values[$field]) {
-        $new_vals['field_' . $field] = ['target_id' => $values[$field]];
-      }
+      $new_vals['field_' . $field] = $values[$field] ? ['target_id' => $values[$field]] : NULL;
     }
 
     foreach ($paragraph_mapping as $type => $field) {
@@ -528,7 +526,6 @@ class CourtCase extends FormBase {
     }
     $new_vals['title'] = $values['box_number'];
     $new_vals['type'] = 'court_case';
-    $new_vals = \array_filter($new_vals);
     if ($form_state->get('nid')) {
       $node = Node::load($form_state->get('nid'));
       foreach ($new_vals as $property => $value) {
