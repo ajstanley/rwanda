@@ -384,21 +384,32 @@ class CourtCase extends FormBase {
       '#options' => [
         'guilty' => $this->t('Guilty'),
         'acquitted' => $this->t('Acquitted'),
+        'pardoned' => $this->t('Pardoned'),
       ],
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
-    $form['outcome'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Outcome'),
-      '#options' => $convictions,
 
+    $form['restitution'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Restitution Amount'),
       '#states' => [
         'enabled' => [
           ':input[name="decision"]' => ['value' => 'guilty'],
         ],
       ],
-      '#prefix' => '<div class = "court_selector">',
+      '#prefix' => '<div class = "accused_selector">',
+      '#suffix' => '</div>',
+    ];
+    $form['tig'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('TIG'),
+      '#states' => [
+        'enabled' => [
+          ':input[name="decision"]' => ['value' => 'guilty'],
+        ],
+      ],
+      '#prefix' => '<div class = "accused_selector">',
       '#suffix' => '</div>',
     ];
 
@@ -415,10 +426,9 @@ class CourtCase extends FormBase {
       '#states' => [
         'enabled' => [
           ':input[name="decision"]' => ['value' => 'guilty'],
-          ':input[name="outcome"]' => ['value' => 'imprisonment'],
         ],
       ],
-      '#prefix' => '<div class = "court_selector">',
+      '#prefix' => '<div class = "accused_selector">',
       '#suffix' => '</div><div class="clearBoth"></div>',
     ];
 
