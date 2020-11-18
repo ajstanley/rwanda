@@ -5,8 +5,14 @@ h1 {
   display: none;
 }
 div.court_selector {
+   float: left;
+   width: 25%;
+   display: inline;
+   padding-right: 2%;
+ }
+div.accused_selector {
   float: left;
-  width: 25%;
+  width: 15%;
   display: inline;
   padding-right: 2%;
 }

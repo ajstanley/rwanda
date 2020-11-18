@@ -147,7 +147,7 @@ class CourtCase extends FormBase {
       $term_data[$term->tid] = $term->name;
     }
     $keys = \array_keys($term_data);
-    $district = $form_state->getValue(['courts', 'district']);
+    $district = $form_state->getValue('field_district');
     if ($node) {
       $district = $node->get('field_district')->getValue()[0]['target_id'];
     }
@@ -155,7 +155,7 @@ class CourtCase extends FormBase {
     $sector_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_district', $keys[0])
       ->execute();
-    $currentSector = $form_state->getValue('sector');
+    $currentSector = $form_state->getValue('field_sector');
     $this->currentSector = $currentSector ? $currentSector : reset($sector_ids);
 
     // Assembly.
@@ -163,7 +163,7 @@ class CourtCase extends FormBase {
       ->condition('field_sector', reset($sector_ids))
       ->execute();
 
-    $currentAssembly = $form_state->getValue('general_assembly');
+    $currentAssembly = $form_state->getValue('field_general_assembly');
     $this->currentAssembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
     $convictions = [
       'imprisonment' => $this->t("Imprisonment"),
@@ -183,7 +183,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
-    $form['register_number'] = [
+    $form['field_register_number'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Register'),
       '#default_value' => $node ? $node->get('field_register_number')->value : '',
@@ -195,7 +195,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="courts_wrapper" class="clearBoth">',
       '#suffix' => '</div>',
     ];
-    $form['courts']['district'] = [
+    $form['courts']['field_district'] = [
       '#type' => 'select',
       '#options' => $term_data,
       '#prefix' => '<div id="district_wrapper" class = "court_selector">',
@@ -211,7 +211,7 @@ class CourtCase extends FormBase {
 
     ];
 
-    $form['courts']['sector'] = [
+    $form['courts']['field_sector'] = [
       '#type' => 'select',
       '#options' => $court_options['sector'],
       '#prefix' => '<div id="sector_wrapper" class = "court_selector">',
@@ -226,7 +226,7 @@ class CourtCase extends FormBase {
 
     ];
 
-    $form['courts']['general_assembly'] = [
+    $form['courts']['field_general_assembly'] = [
       '#type' => 'select',
       '#options' => $court_options['general_assembly'],
       '#prefix' => '<div id="assembly_wrapper" class = "court_selector">',
@@ -241,7 +241,7 @@ class CourtCase extends FormBase {
       ],
     ];
 
-    $form['courts']['court_of_cell'] = [
+    $form['courts']['field_court_of_cell'] = [
       '#type' => 'select',
       '#options' => $court_options['court_of_cell'],
       '#prefix' => '<div id="cell_wrapper" class = "court_selector clearBoth">',
@@ -251,12 +251,12 @@ class CourtCase extends FormBase {
       '#description' => $this->t('Rwandan Court of Cell'),
       '#states' => [
         'enabled' => [
-          ':input[name="court_level"]' => ['value' => 'cell'],
+          ':input[name="field_court_level"]' => ['value' => 'cell'],
         ],
       ],
     ];
 
-    $form['courts']['court_of_sector'] = [
+    $form['courts']['field_court_of_sector'] = [
       '#type' => 'select',
       '#options' => $court_options['court_of_sector'],
       '#prefix' => '<div id="court_of_sector_wrapper" class = "court_selector">',
@@ -267,12 +267,12 @@ class CourtCase extends FormBase {
       '#disabled' => TRUE,
       '#states' => [
         'enabled' => [
-          ':input[name="court_level"]' => ['value' => 'sector'],
+          ':input[name="field_court_level"]' => ['value' => 'sector'],
         ],
       ],
     ];
 
-    $form['courts']['court_of_appeal'] = [
+    $form['courts']['field_court_of_appeal'] = [
       '#type' => 'select',
       '#options' => $court_options['court_of_appeal'],
       '#prefix' => '<div id="court_of_appeal_wrapper" class = "court_selector">',
@@ -283,11 +283,11 @@ class CourtCase extends FormBase {
       '#disabled' => TRUE,
       '#states' => [
         'enabled' => [
-          ':input[name="court_level"]' => ['value' => 'appeal'],
+          ':input[name="field_court_level"]' => ['value' => 'appeal'],
         ],
       ],
     ];
-    $form['court_level'] = [
+    $form['courts']['field_court_level'] = [
       '#type' => 'radios',
       '#options' => [
         'cell' => $this->t('Cell'),
@@ -299,7 +299,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "clearBoth">',
       '#suffix' => '</div>',
     ];
-    $form['trial_stage'] = [
+    $form['courts']['field_trial_stage'] = [
       '#type' => 'select',
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
@@ -311,7 +311,7 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Trial Type'),
       '#default_value' => $node ? $node->get('field_trial_stage')->value : '',
     ];
-    $form['trial_level'] = [
+    $form['courts']['field_trial_level'] = [
       '#type' => 'select',
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
@@ -324,44 +324,65 @@ class CourtCase extends FormBase {
       '#title' => $this->t('Trial Stage'),
       '#default_value' => $node ? $node->get('field_trial_level')->value : '',
     ];
-    $form['trial_location'] = [
-      '#type' => 'textfield',
-      '#default_value' => $node ? $node->get('field_trial_location')->value : '',
-
-      '#prefix' => '<div class = "court_selector">',
+    $form['courts']['field_trial_location'] = [
+      '#type' => 'select',
+      '#options' => $court_options['sector'],
+      '#prefix' => '<div id="sector_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Trial Location'),
+      '#default_value' => $node ? $sector_val : '',
+      '#description' => $this->t('Rwandan Court Sector'),
+      '#ajax' => [
+        'callback' => '::changeCourtsOptionsAjax',
+        'wrapper' => 'courts_wrapper',
+      ],
     ];
-    $form['trial_date'] = [
+    $form['courts']['field_trial_date'] = [
       '#type' => 'date',
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Trial Date'),
       '#default_value' => $node ? $node->get('field_trial_date')->value : '1990-01-01',
     ];
-    $form['crime'] = [
+
+    $form['field_plaintiff'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'node',
+      '#title' => $this->t('Plaintiff'),
+      //'#default_value' => $node ? $node->field_plaintiff->entity : '',
+      '#description' => $this->t('Select plaintiff.'),
+      '#selection_settings' => [
+        'target_bundles' => ['person'],
+      ],
+      '#autocreate' => [
+        'bundle' => 'person',
+      ],
+      '#prefix' => '<div class = "clearBoth accomplice">',
+      '#suffix' => '</div>',
+    ];
+    $form['field_crime'] = [
       '#type' => 'select',
       '#title' => $this->t('Crime'),
       '#options' => $crime_data,
       '#default_value' => $node ? $node->get('field_crime')
         ->getValue()[0]['target_id'] : '',
 
-      '#prefix' => '<div class = "court_selector">',
+      '#prefix' => '<div class = "court_selector clearBoth">',
       '#suffix' => '</div>',
     ];
-    $form['new_crime'] = [
+    $form['field_new_crime'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Unlisted Crime Type'),
       '#states' => [
         'enabled' => [
-          ':input[name="crime"]' => ['value' => 'other'],
+          ':input[name="field_crime"]' => ['value' => 'other'],
         ],
       ],
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div><div class = "clearBoth"></div>',
     ];
 
-    $form['accused'] = [
+    $form['field_accused'] = [
       '#type' => 'entity_autocomplete',
       '#target_type' => 'node',
       '#title' => $this->t('Accused'),
@@ -377,7 +398,7 @@ class CourtCase extends FormBase {
       '#suffix' => '</div>',
     ];
 
-    $form['decision'] = [
+    $form['field_decision'] = [
       '#type' => 'select',
       '#title' => $this->t('Court Decision'),
       '#description' => $this->t('If accused are found guilty or not.'),
@@ -390,30 +411,32 @@ class CourtCase extends FormBase {
       '#suffix' => '</div>',
     ];
 
-    $form['restitution'] = [
+    $form['field_restitution'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Restitution Amount'),
+      '#title' => $this->t('Restitution'),
+      '#default_value' => $node ? $node->get('field_restitution')->value : '',
       '#states' => [
         'enabled' => [
-          ':input[name="decision"]' => ['value' => 'guilty'],
+          ':input[name="field_decision"]' => ['value' => 'guilty'],
         ],
       ],
       '#prefix' => '<div class = "accused_selector">',
       '#suffix' => '</div>',
     ];
-    $form['tig'] = [
+    $form['field_tig'] = [
       '#type' => 'textfield',
       '#title' => $this->t('TIG'),
+      '#default_value' => $node ? $node->get('field_tig')->value : '',
       '#states' => [
         'enabled' => [
-          ':input[name="decision"]' => ['value' => 'guilty'],
+          ':input[name="field_decision"]' => ['value' => 'guilty'],
         ],
       ],
       '#prefix' => '<div class = "accused_selector">',
       '#suffix' => '</div>',
     ];
 
-    $form['sentence'] = [
+    $form['field_sentence'] = [
       '#type' => 'select',
       '#title' => $this->t('Sentence'),
       '#options' => [
@@ -425,7 +448,7 @@ class CourtCase extends FormBase {
       ],
       '#states' => [
         'enabled' => [
-          ':input[name="decision"]' => ['value' => 'guilty'],
+          ':input[name="field_decision"]' => ['value' => 'guilty'],
         ],
       ],
       '#prefix' => '<div class = "accused_selector">',
@@ -433,28 +456,11 @@ class CourtCase extends FormBase {
     ];
 
 
-    $form['plaintiff'] = [
-      '#type' => 'entity_autocomplete',
-      '#target_type' => 'node',
-      '#title' => $this->t('Plaintiff'),
-      '#description' => $this->t('Select plaintiff.'),
-      '#default_value' => $node ? $node->field_plaintiff->entity : '',
-      '#selection_settings' => [
-        'target_bundles' => ['person'],
-      ],
-      '#autocreate' => [
-        'bundle' => 'person',
-      ],
-      '#prefix' => '<div class = "clearBoth participants">',
-      '#suffix' => '</div>',
-    ];
-
-
-    $form['witnesses'] = $paragraphs['field_witnesses'];
-    $form['accomplices'] = $paragraphs['field_accomplices'];
-    $form['properties'] = $paragraphs['field_properties_destroyed'];
+    $form['field_witnesses'] = $paragraphs['field_witnesses'];
+    $form['field_accomplices'] = $paragraphs['field_accomplices'];
+    $form['field_properties'] = $paragraphs['field_properties_destroyed'];
     $paragraphs['field_observer_name']['widget']['add_more']['#value'] = $this->t("Add observer");
-    $form['observers'] = $paragraphs['field_observer_name'];
+    $form['field_observers'] = $paragraphs['field_observer_name'];
 
     $form['#attached']['library'][] = 'rwanda/rwanda_court';
     $form['submit'] = [
@@ -500,10 +506,10 @@ class CourtCase extends FormBase {
     ];
 
     foreach ($this->getActiveFields() as $field) {
-      $new_vals['field_' . $field] = $values[$field];
+      $new_vals[$field] = $values[$field];
     }
     foreach ($this->getReferenceFields() as $field) {
-      $new_vals['field_' . $field] = $values[$field] ? ['target_id' => $values[$field]] : NULL;
+      $new_vals[$field] = $values[$field] ? ['target_id' => $values[$field]] : NULL;
     }
 
     foreach ($paragraph_mapping as $type => $field) {
@@ -529,13 +535,17 @@ class CourtCase extends FormBase {
         $new_vals['field_observer_name'][] = ['target_id' => $observer['target_id']];
       }
     }
-    if ($values['new_crime']) {
-      $term = Term::create(['name' => $values['new_crime'], 'vid' => 'crimes']);
+    if ($values['field_new_crime']) {
+      $term = Term::create([
+        'name' => $values['field_new_crime'],
+        'vid' => 'crimes',
+      ]);
       $term->save();
       $new_vals['field_crime']['target_id'] = $term->id();
     }
     $new_vals['title'] = $values['box_number'];
     $new_vals['type'] = 'court_case';
+    $new_vals = \array_filter($new_vals);
     if ($form_state->get('nid')) {
       $node = Node::load($form_state->get('nid'));
       foreach ($new_vals as $property => $value) {
@@ -654,20 +664,22 @@ class CourtCase extends FormBase {
    */
   private function getActiveFields() {
     return [
-      'district',
-      'sector',
-      'general_assembly',
-      'court_of_cell',
-      'court_of_sector',
-      'court_of_appeal',
-      'register_number',
-      'trial_stage',
-      'trial_level',
-      'trial_location',
-      'trial_date',
-      'outcome',
-      'sentence',
-      'court_level',
+      'field_district',
+      'field_sector',
+      'field_general_assembly',
+      'field_court_of_cell',
+      'field_court_of_sector',
+      'field_court_of_appeal',
+      'field_register_number',
+      'field_trial_stage',
+      'field_trial_level',
+      'field_trial_location',
+      'field_trial_date',
+      'field_decision',
+      'field_restitution',
+      'field_tig',
+      'field_sentence',
+      'field_court_level',
     ];
   }
 
@@ -679,9 +691,9 @@ class CourtCase extends FormBase {
    */
   private function getReferenceFields() {
     return [
-      'crime',
-      'accused',
-      'plaintiff',
+      'field_crime',
+      'field_accused',
+      'field_plaintiff',
     ];
   }
 
