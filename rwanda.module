@@ -102,17 +102,17 @@ function rwanda_field_widget_entity_reference_paragraphs_form_alter(&$element, &
   }
   $configs = [
     [
-      'field_name' => 'field_outcome',
+      'field_name' => 'field_restitution',
       'conditions' => ["value" => 'guilty'],
       'controlling_field' => 'field_court_decision',
     ],
     [
       'field_name' => 'field_accomplice_sentence',
-      'conditions' => ["value" => 'imprisonment'],
-      'controlling_field' => 'field_outcome',
+      'conditions' => ["value" => 'guilty'],
+      'controlling_field' => 'field_court_decision',
     ],
     [
-      'field_name' => 'field_accomplice_sentence',
+      'field_name' => 'field_tig',
       'conditions' => ["value" => 'guilty'],
       'controlling_field' => 'field_court_decision',
     ],

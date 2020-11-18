@@ -80,10 +80,11 @@ details summary::-webkit-details-marker {
 .field--name-field-accomplice-name,
 .field--name-field-accomplice-sentence,
 .field--name-field-court-decision,
-.field--name-field-outcome,
+.field--name-field-tig,
+.field--name-field-restitution,
 .field--name-field-number-of-destroyed-items {
   float: left;
-  width: 25%;
+  width: 20%;
   display: inline;
   padding-right: 2%;
 
