@@ -165,15 +165,17 @@ class CourtCase extends FormBase {
 
     $currentAssembly = $form_state->getValue('field_general_assembly');
     $this->currentAssembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
-    $convictions = [
-      'imprisonment' => $this->t("Imprisonment"),
-      'restitution' => $this->t('Restitution'),
-      'imprisonmentandrestitution' => $this->t('Imprisonment and Restitution'),
-      'tig' => $this->t('TIG'),
-      'pardoned' => $this->t('Pardoned'),
-    ];
 
     $court_options = $this->getCourtOptions($form_state);
+    $all_courts = [];
+    $candidate_courts = ['court_of_cell', 'court_of_appeal', 'court_of_sector'];
+    foreach ($candidate_courts as $candidate_court) {
+      foreach ($court_options[$candidate_court] as $k => $v) {
+       $all_courts[$v] = $k;
+      }
+    }
+    $all_courts = \array_flip($all_courts);
+
     $form['box_number'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Box Number'),
@@ -333,7 +335,7 @@ class CourtCase extends FormBase {
     ];
     $form['courts']['field_trial_location'] = [
       '#type' => 'select',
-      '#options' => $court_options['sector'],
+      '#options' => $all_courts,
       '#prefix' => '<div id="sector_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Trial Location'),
