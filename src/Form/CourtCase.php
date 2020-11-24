@@ -190,6 +190,13 @@ class CourtCase extends FormBase {
       '#prefix' => '<div class = "court_selector">',
       '#suffix' => '</div>',
     ];
+    $form['field_trial_number'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Trial Number'),
+      '#default_value' => $node ? $node->get('field_trial_number')->value : '',
+      '#prefix' => '<div class = "court_selector">',
+      '#suffix' => '</div>',
+    ];
     $form['courts'] = [
       '#type' => 'fieldset',
       '#prefix' => '<div id="courts_wrapper" class="clearBoth">',
@@ -671,6 +678,7 @@ class CourtCase extends FormBase {
       'field_court_of_sector',
       'field_court_of_appeal',
       'field_register_number',
+      'field_trial_number',
       'field_trial_stage',
       'field_trial_level',
       'field_trial_location',

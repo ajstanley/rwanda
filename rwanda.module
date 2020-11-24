@@ -134,7 +134,7 @@ function rwanda_field_widget_entity_reference_paragraphs_form_alter(&$element, &
  * @param string $state_key
  *   The selected state.
  * @param array $conditions
- *   The conditionsn to be met.
+ *   The conditions to be met.
  */
 function paragraph_field_state(array &$element, $field_name, $controlling_field_name, $state_key, array $conditions) {
   if (!isset($element['subform'][$field_name])) {
