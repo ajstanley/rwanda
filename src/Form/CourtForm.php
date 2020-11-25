@@ -79,10 +79,12 @@ class CourtForm extends FormBase {
     $csv = [];
     foreach ($rows as $row) {
       $row = \array_slice($row, 0, 6);
-      $csv[] = array_combine($headers, $row);
       if ($row[5] == '') {
         $empty++;
+        continue;
       }
+      $csv[] = array_combine($headers, $row);
+
     }
     $file->delete();
     foreach ($csv as $data) {
@@ -93,7 +95,6 @@ class CourtForm extends FormBase {
         }
         foreach ($headers as $header) {
           $replacement = trim($data[$header]);
-
           if ($replacement) {
             $current_vals[$header] = $replacement;
           }
@@ -112,25 +113,20 @@ class CourtForm extends FormBase {
           $name = $this->cleanString($current_vals[$parents[$vocab]]);
           $name = \strtolower($name);
           $name = \ucfirst($name);
+          $parent_vocabulary = $parents[$vocab];
           $parent_terms = \Drupal::entityTypeManager()
             ->getStorage('taxonomy_term')
-            ->loadByProperties(['name' => $name, 'vid' => $parents[$vocab]]);
+            ->loadByProperties(['name' => $name, 'vid' => $parent_vocabulary]);
           $parent_term = reset($parent_terms);
         }
-        // Check to see if term exists already in this vocabulary.
+
+        if ($parent_term) {
+          $components["field_{$parents[$vocab]}"] = $parent_term->id();
+        }
         $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
           ->loadByProperties($components);
         $term = reset($terms);
-        if ($term && $parent_term) {
-          $field_name = "field_{$parents[$vocab]}";
-          $term->$field_name->setValue($parent_term->id());
-          $term->save();
-          $updated++;
-        }
         if (!$term) {
-          if ($parent_term) {
-            $components["field_{$parents[$vocab]}"] = $parent_term->id();
-          }
           $term = Term::create($components)->save();
           $count++;
         }
