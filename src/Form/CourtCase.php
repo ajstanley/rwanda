@@ -620,7 +620,6 @@ class CourtCase extends FormBase {
     $general_term = Term::load($this->currentAssembly);
     $parent_id = $general_term->get('field_sector');
     $parent_term = Term::load($parent_id->getValue()[0]['target_id']);
-    $id = $parent_term->id();
     return $all_options;
   }
 
@@ -633,7 +632,7 @@ class CourtCase extends FormBase {
   public function buildOptionsArray() {
     return [
       'sector' => [
-        'parent' => 'district',
+        'parent' => 'field_district',
         'parent_field' => 'field_district',
         'default' => $this->currentDistrict,
         'vid' => 'sector',
