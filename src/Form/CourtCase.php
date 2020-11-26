@@ -88,18 +88,25 @@ class CourtCase extends FormBase {
     $entity = $this->entityTypeManager->getStorage('node')->create([
       'type' => 'court_case',
     ]);
-
+    $coa_val = $coc_val = $cos_val = $sector_val = $assembly_val = '';
     if ($node) {
       $entity = $node;
       $form_state->set('nid', $node->id());
-      $cos_val = \is_array($node->get('field_court_of_sector')
-        ->getValue()) ? $node->get('field_court_of_sector')->getValue() : '';
-      $coc_val = \is_array($node->get('field_court_of_cell')
-        ->getValue()) ? $node->get('field_court_of_cell')->getValue() : '';
-      $coa_val = \is_array($node->get('field_court_of_appeal')
-        ->getValue()) ? $node->get('field_court_of_appeal')->getValue() : '';
-      $sector_val = \is_array($node->get('field_sector')
-        ->getValue()) ? $node->get('field_sector')->getValue() : '';
+      if (!$node->get('field_court_of_sector')->isEmpty()) {
+        $cos_val = $node->get('field_court_of_sector')->entity->id();
+      }
+      if (!$node->get('field_court_of_cell')->isEmpty()) {
+        $coc_val = $node->get('field_court_of_cell')->entity->id();
+      }
+      if (!$node->get('field_court_of_appeal')->isEmpty()) {
+        $coa_val = $node->get('field_court_of_appeal')->entity->id();
+      }
+      if (!$node->get('field_sector')->isEmpty()) {
+        $sector_val = $node->get('field_sector')->entity->id();
+      }
+      if (!$node->get('field_general_assembly')->isEmpty()) {
+        $assembly_val = $node->get('field_general_assembly')->entity->id();
+      }
     }
 
     $form_state->set('entity', $entity);
@@ -152,11 +159,21 @@ class CourtCase extends FormBase {
       $district = $node->get('field_district')->getValue()[0]['target_id'];
     }
     $this->currentDistrict = $district ? $district : $keys[0];
+
+    // Sector  form_state, node, default
     $sector_ids = $this->entityQuery->get('taxonomy_term')
       ->condition('field_district', $keys[0])
       ->execute();
+
     $currentSector = $form_state->getValue('field_sector');
-    $this->currentSector = $currentSector ? $currentSector : reset($sector_ids);
+    if (!$currentSector && $sector_val) {
+      $currentSector = $sector_val;
+    }
+    if (!$sector_val) {
+      $currentSector = reset($sector_ids);
+    }
+
+    $this->currentSector = $currentSector;
 
     // Assembly.
     $assembly_ids = $this->entityQuery->get('taxonomy_term')
@@ -164,14 +181,20 @@ class CourtCase extends FormBase {
       ->execute();
 
     $currentAssembly = $form_state->getValue('field_general_assembly');
-    $this->currentAssembly = $currentAssembly ? $currentAssembly : reset($assembly_ids);
+    if (!$currentAssembly && $assembly_val) {
+      $currentAssembly = $assembly_val;
+    }
+    if (!$assembly_val) {
+      $currentAssembly = reset($assembly_ids);
+    }
+    $this->currentAssembly = $currentAssembly;
 
     $court_options = $this->getCourtOptions($form_state);
     $all_courts = [];
     $candidate_courts = ['court_of_cell', 'court_of_appeal', 'court_of_sector'];
     foreach ($candidate_courts as $candidate_court) {
       foreach ($court_options[$candidate_court] as $k => $v) {
-       $all_courts[$v] = $k;
+        $all_courts[$v] = $k;
       }
     }
     $all_courts = \array_flip($all_courts);
@@ -241,8 +264,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="assembly_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('General Assembly'),
-      '#default_value' => $node ? $node->get('field_general_assembly')
-        ->getValue()[0] : '',
+      '#default_value' => $node ? $assembly_val : '',
       '#description' => $this->t('Rwandan General Assembly'),
       '#ajax' => [
         'callback' => '::changeCourtsOptionsAjax',
@@ -644,19 +666,19 @@ class CourtCase extends FormBase {
         'vid' => 'general_assembly',
       ],
       'court_of_cell' => [
-        'parent' => 'general_assembly',
+        'parent' => 'field_general_assembly',
         'parent_field' => 'field_general_assembly',
         'default' => $this->currentAssembly,
         'vid' => 'court_of_cell',
       ],
       'court_of_sector' => [
-        'parent' => 'general_assembly',
+        'parent' => 'field_general_assembly',
         'parent_field' => 'field_general_assembly',
         'default' => $this->currentAssembly,
         'vid' => 'court_of_sector',
       ],
       'court_of_appeal' => [
-        'parent' => 'general_assembly',
+        'parent' => 'field_general_assembly',
         'parent_field' => 'field_general_assembly',
         'default' => $this->currentAssembly,
         'vid' => 'court_of_appeal',
