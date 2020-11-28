@@ -361,7 +361,7 @@ class CourtCase extends FormBase {
       '#prefix' => '<div id="sector_wrapper" class = "court_selector">',
       '#suffix' => '</div>',
       '#title' => $this->t('Trial Location'),
-      '#default_value' => $node ? $sector_val : '',
+      '#default_value' => $node ? $node->field_trial_location->entity->id() : '',
       '#description' => $this->t('Rwandan Court Sector'),
       '#ajax' => [
         'callback' => '::changeCourtsOptionsAjax',
@@ -380,7 +380,7 @@ class CourtCase extends FormBase {
       '#type' => 'entity_autocomplete',
       '#target_type' => 'node',
       '#title' => $this->t('Plaintiff'),
-      //'#default_value' => $node ? $node->field_plaintiff->entity : '',
+      '#default_value' => $node ? $node->field_plaintiff->entity : '',
       '#description' => $this->t('Select plaintiff.'),
       '#selection_settings' => [
         'target_bundles' => ['person'],
@@ -540,6 +540,20 @@ class CourtCase extends FormBase {
       $new_vals[$field] = $values[$field];
     }
     foreach ($this->getReferenceFields() as $field) {
+      $potential_node = $values[$field];
+      if (isset($potential_node['entity'])) {
+        $entity = $potential_node['entity'];
+        $bundle = $entity->bundle();
+        $id = $entity->id();
+        if (!$id) {
+          $title = $entity->get('title')->value;
+          $entity = Node::create(['title' => $title, 'type' => $bundle]);
+          $entity->save();
+          $id = $entity->id();
+          $values[$field] = $id;
+        }
+      }
+
       $new_vals[$field] = $values[$field] ? ['target_id' => $values[$field]] : NULL;
     }
 
@@ -563,6 +577,19 @@ class CourtCase extends FormBase {
 
     foreach ($values['field_observer_name'] as $observer) {
       if (\is_array($observer) && $observer['target_id']) {
+        if (isset($observer['target_id']['entity'])) {
+          $entity = $observer['target_id']['entity'];
+          $id = $entity->id();
+          if (!$id) {
+            $title = $entity->get('title')->value;
+            $entity = Node::create([
+              'title' => $title,
+              'type' => $entity->bundle(),
+            ]);
+            $entity->save();
+            $observer['target_id'] = $entity->id();
+          }
+        }
         $new_vals['field_observer_name'][] = ['target_id' => $observer['target_id']];
       }
     }
@@ -639,9 +666,6 @@ class CourtCase extends FormBase {
       $term = Term::load($id);
       $options[$term->id()] = $term->getName();
     }
-    $general_term = Term::load($this->currentAssembly);
-    $parent_id = $general_term->get('field_sector');
-    $parent_term = Term::load($parent_id->getValue()[0]['target_id']);
     return $all_options;
   }
 
@@ -744,6 +768,18 @@ class CourtCase extends FormBase {
     foreach ($subform as $field => $element) {
       if ($element) {
         $values = \array_values($element[0]);
+        if (isset($values[0]['entity'])) {
+          $entity = $values[0]['entity'];
+          $id = $entity->id();
+          if (!$id) {
+            $entity = Node::create([
+              'title' => $entity->get('title')->value,
+              'type' => $entity->bundle(),
+            ]);
+            $entity->save();
+            $element[0] = ['target_id' => $entity->id()];
+          }
+        }
         if ($values[0]) {
           $parsed[$field] = $element[0];
         }
