@@ -169,7 +169,7 @@ class CourtCase extends FormBase {
     if (!$currentSector && $sector_val) {
       $currentSector = $sector_val;
     }
-    if (!$sector_val) {
+    if (!$currentSector) {
       $currentSector = reset($sector_ids);
     }
 
