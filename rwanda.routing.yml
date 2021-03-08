@@ -37,3 +37,10 @@ rwanda.court_case.edit:
     _title: 'CourtCase'
   requirements:
     _access: 'TRUE'
+rwanda.create_persons:
+  path: '/rwanda/form/create_persons'
+  defaults:
+    _form: '\Drupal\rwanda\Form\CreatePersons'
+    _title: 'CreatePersons'
+  requirements:
+    _access: 'TRUE'
