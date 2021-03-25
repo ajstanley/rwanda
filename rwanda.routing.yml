@@ -44,3 +44,10 @@ rwanda.create_persons:
     _title: 'CreatePersons'
   requirements:
     _access: 'TRUE'
+rwanda.search_document:
+  path: '/rwanda/form/search_document'
+  defaults:
+    _form: '\Drupal\rwanda\Form\SearchDocument'
+    _title: 'SearchDocument'
+  requirements:
+    _access: 'TRUE'

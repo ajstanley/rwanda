@@ -9,3 +9,9 @@ rwanda_login:
   css:
     theme:
       css/rwanda_login.css: {}
+
+rwanda_search:
+  version: 1.x
+  css:
+    theme:
+      css/rwanda_search.css: {}

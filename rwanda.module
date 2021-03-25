@@ -5,10 +5,14 @@
  * Contains rwanda.module.
  */
 
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
+use Drupal\media\MediaInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Spatie\PdfToText\Pdf;
+use Drupal\file\Entity\File;
 
 /**
  * Implements hook_help().
@@ -147,4 +151,37 @@ function paragraph_field_state(array &$element, $field_name, $controlling_field_
   $field_id .= '[' . implode('][', $parents) . ']';
   $subform[$field_name]['#states'][$state_key][':input[name="' . $field_id . '"]'] = $conditions;
 
+}
+
+/**
+ * Implements hook_media_presave().
+ */
+function rwanda_media_presave(MediaInterface $media) {
+  if ($media->bundle() != 'document') {
+    return;
+  }
+  $text = FALSE;
+  if (!$text) {
+    $file_id = $media->get('field_media_document')->getValue()[0]['target_id'];
+    if ($file_id) {
+      $file = File::load($file_id);
+      if ($file) {
+        $data = file_get_contents($file->getFileUri());
+        $location = 'temporary://myfile';
+        $tmp_file = file_save_data($data, $location, FileSystemInterface::EXISTS_REPLACE);
+        $tmp_uri = $tmp_file->getFileUri();
+        $stream_wrapper_manager = \Drupal::service('stream_wrapper_manager')->getViaUri($tmp_uri);
+        $file_path = $stream_wrapper_manager->realpath();
+        $text = Pdf::getText($file_path);
+        $tmp_file->delete();
+        $is_charge_sheet = preg_match('/IFISHI/', $text);
+        if (preg_match('/IFISHI/', $text)) {
+          $media->set('field_document_type', 'Charge Sheet');
+        }
+      }
+    }
+    else {
+      \Drupal::logger('islandora_text_extraction')->warning("No file associated with media entity.");
+    }
+  }
 }

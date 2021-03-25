@@ -1,0 +1,11 @@
+.js-quickedit-page-title {
+  display: none;
+}
+
+
+div.search_element {
+  float: left;
+  width: 12%;
+  display: inline;
+  padding-right: 2%;
+}
