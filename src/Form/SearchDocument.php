@@ -93,9 +93,9 @@ class SearchDocument extends FormBase {
       '#type' => 'select',
       '#title' => $this->t('Document Type'),
       '#options' => [
-        'nyanbyonbo' => 'Nyanbyonbo',
-        'bungwe' => 'Bungwe',
-        'gatenga' => 'Gatenga'
+        'charge' => 'Charge Sheet',
+        'warrant' => 'Warrant of Arrest',
+        'release' => 'Warrant of Immediate Release'
       ],
       '#description' => $this->t('Enter Document type.'),
       '#prefix' => '<div class = "search_element">',
@@ -105,9 +105,9 @@ class SearchDocument extends FormBase {
       '#type' => 'select',
       '#title' => $this->t('Status'),
       '#options' => [
-        'nyanbyonbo' => 'Nyanbyonbo',
-        'bungwe' => 'Bungwe',
-        'gatenga' => 'Gatenga'
+        'pending' => 'Pending',
+        'complete' => 'Complete',
+        'incomplete' => 'Incomplete',
       ],
       '#description' => $this->t('Choose Status'),
       '#prefix' => '<div class = "search_element">',
