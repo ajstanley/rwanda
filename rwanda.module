@@ -174,9 +174,8 @@ function rwanda_media_presave(MediaInterface $media) {
         $file_path = $stream_wrapper_manager->realpath();
         $text = Pdf::getText($file_path);
         $tmp_file->delete();
-        $is_charge_sheet = preg_match('/IFISHI/', $text);
         if (preg_match('/IFISHI/', $text)) {
-          $media->set('field_document_type', 'Charge Sheet');
+          $media->set('field_record_type', 'Charge Sheet');
         }
       }
     }
