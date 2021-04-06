@@ -9,10 +9,10 @@ use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
-use Drupal\media\MediaInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Spatie\PdfToText\Pdf;
 use Drupal\file\Entity\File;
+use Drupal\media\MediaInterface;
+use Spatie\PdfToText\Pdf;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
  * Implements hook_help().
@@ -170,17 +170,27 @@ function rwanda_media_presave(MediaInterface $media) {
         $location = 'temporary://myfile';
         $tmp_file = file_save_data($data, $location, FileSystemInterface::EXISTS_REPLACE);
         $tmp_uri = $tmp_file->getFileUri();
-        $stream_wrapper_manager = \Drupal::service('stream_wrapper_manager')->getViaUri($tmp_uri);
-        $file_path = $stream_wrapper_manager->realpath();
-        $text = Pdf::getText($file_path);
-        $tmp_file->delete();
-        if (preg_match('/IFISHI/', $text)) {
-          $media->set('field_record_type', 'Charge Sheet');
+        $stream_wrapper_manager = \Drupal::service('stream_wrapper_manager')
+          ->getViaUri($tmp_uri);
+        if ($file->getMimeType() == 'application/pdf') {
+          $file_path = $stream_wrapper_manager->realpath();
+          $text = Pdf::getText($file_path);
+          $tmp_file->delete();
+          if (preg_match('/IFISHI/', $text)) {
+            $terms = \Drupal::entityTypeManager()
+              ->getStorage('taxonomy_term')
+              ->loadByProperties(['name' => 'Charge Sheet']);
+            $tid = key($terms);
+          }
+          if ($tid) {
+            $media->set('field_document_type', ['target_id' => $tid]);
+          }
         }
       }
     }
     else {
-      \Drupal::logger('islandora_text_extraction')->warning("No file associated with media entity.");
+      \Drupal::logger('islandora_text_extraction')
+        ->warning("No file associated with media entity.");
     }
   }
 }
